@@ -1,0 +1,128 @@
+@use '../styles/variables' as *;
+
+.calculator-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 7rem 1rem;
+  background: url(../assets/globe_bg.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 80vh; // keeps it below navbar but before footer
+}
+
+.calculator-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem;
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  margin-top: 4rem;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+}
+
+.calculator-logo {
+  width: 80px;
+}
+
+.calculator-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.calculator-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    text-align: left;
+    font-size: 0.9rem;
+    color: #ccc;
+  }
+
+  input,
+  select {
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    background: #fff;
+  }
+
+  .live-price {
+    color: $light !important;
+  }
+
+  .risk-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+
+    input {
+      flex: 1;
+    }
+
+    .unit {
+      color: $light;
+      font-size: 1.5rem;
+    }
+
+    .swap-btn {
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: $clr-prim-300;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 1rem;
+
+      &:hover {
+        background-color: $clr-prim-400;
+        color: $clr-prim-100;
+      }
+    }
+  }
+
+  .calculate-btn {
+    margin-top: 1rem;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 8px;
+    background-color: $clr-prim-300;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+
+    &:hover {
+      background-color: $clr-prim-200;
+    }
+  }
+}
+
+.result-box {
+  margin-top: 1.6rem;
+  background-color: $light;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+
+  p {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.3rem;
+  }
+
+  h3 {
+    font-size: 2rem;
+    color: #198754;
+  }
+}
