@@ -62,7 +62,10 @@ const Landing = () => {
 
           {/* Right Image */}
           <div className="about-image">
-            <img src="./src/assets/monitor.jpg" alt="CoreFx Academy Training" />
+            <img
+              src="../src/assets/monitor.jpg"
+              alt="CoreFx Academy Training"
+            />
           </div>
         </div>
       </section>
