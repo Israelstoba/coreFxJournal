@@ -22,7 +22,7 @@
     }
   }
 
-  /* Desktop nav (unchanged behavior) */
+  /* Desktop nav */
   &__list {
     display: flex;
     justify-content: center;
@@ -56,7 +56,6 @@
     .products {
       position: relative;
 
-      /* Desktop: hover opens floating dropdown */
       &:hover .navbar__dropdown {
         opacity: 1;
         transform: translateY(0);
@@ -65,7 +64,6 @@
     }
   }
 
-  /* Desktop floating dropdown */
   &__dropdown {
     position: absolute;
     top: 100%;
@@ -135,45 +133,38 @@
     }
   }
 
-  /* Overlay used only on mobile when menu open */
+  /* Overlay for mobile */
   .navbar__overlay {
     position: fixed;
-    inset: 0; /* top:0; right:0; bottom:0; left:0 */
+    inset: 0;
     background: rgba(0, 0, 0, 0.35);
-    z-index: 230; /* less than menu z-index */
-    backdrop-filter: none;
+    z-index: 230;
   }
 
-  /* =========================
-     Mobile (≤768px) changes
-     ========================= */
+  /* ======================
+     Mobile <=768px
+     ====================== */
   @media (max-width: 768px) {
-    padding: 1rem 2rem;
+    padding: 1rem;
 
-    /* Drawer container: slide in from right */
     &__list {
       position: fixed;
       top: 0;
       right: 0;
-      height: 100vh;
-      min-height: 100vh;
       width: 90%;
+      height: 100vh;
       background: rgba(0, 0, 0, 0.95);
-      display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 0;
       padding: 5rem 1.5rem 2rem;
-      transform: translateX(100%); /* hidden */
-      transition: transform 0.6s ease;
+      transform: translateX(100%);
+      transition: transform 0.4s ease;
       z-index: 240;
-      overflow-y: auto; /* scroll if long */
+      overflow-y: auto;
 
       &.active {
         transform: translateX(0);
       }
 
-      /* stacked items */
       .list-items {
         width: 100%;
         border-bottom: 1px solid rgba(255, 255, 255, 0.03);
@@ -182,83 +173,55 @@
           display: block;
           width: 100%;
           padding: 1rem 0.5rem;
-          text-align: left;
           font-size: 1.05rem;
           color: $light;
-          background: transparent;
-          border: none;
         }
       }
     }
 
-    /* show hamburger on mobile */
     &__toggle {
       display: flex;
     }
 
-    /* Prevent hover from opening on mobile */
-    .products:hover .navbar__dropdown {
-      opacity: 0 !important;
-      transform: translateY(-10px) !important;
-      pointer-events: none !important;
-    }
-
-    /* Mobile: dropdown becomes part of flow so it pushes items down.
-       We support CSS-only (focus-within) and JS toggling via .open. */
     .products {
       width: 100%;
-      display: block;
+      text-align: left;
 
       > .links {
         width: 100%;
+        display: block;
         padding: 1rem 0.5rem;
-        display: inline-block;
       }
 
       .navbar__dropdown {
-        position: relative; /* part of flow */
-        top: auto;
-        left: auto;
+        position: relative;
         width: 100%;
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        backdrop-filter: none;
-        overflow: hidden;
-
         max-height: 0;
+        overflow: hidden;
         opacity: 0;
         pointer-events: none;
-        transition: max-height 0.35s ease, opacity 0.28s ease,
-          padding 0.28s ease;
+        transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease;
+        background: rgba(255, 255, 255, 0.05);
+
+        &.open {
+          max-height: 500px;
+          opacity: 1;
+          pointer-events: auto;
+          padding-bottom: 0.5rem;
+        }
 
         .navbar__dropdown-item {
           padding: 0.75rem 0.5rem;
           display: block;
           width: 100%;
-          text-align: left;
           color: $light;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: $clr-prim-100;
+          }
         }
       }
-
-      /* Expand via CSS focus-within or via .open (JS) */
-      &:focus-within .navbar__dropdown,
-      &.open .navbar__dropdown,
-      .navbar__dropdown.open {
-        max-height: 600px;
-        opacity: 1;
-        pointer-events: auto;
-        padding-bottom: 0.5rem;
-      }
     }
-
-    /* small styling tweak for dropdown items */
-    .navbar__dropdown-item {
-      color: $light;
-      &:hover {
-        background: rgba(255, 255, 255, 0.03);
-        color: $clr-prim-100;
-      }
-    }
-  } /* end media */
+  }
 }

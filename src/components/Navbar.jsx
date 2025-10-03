@@ -9,7 +9,7 @@ export default function Navbar() {
   const [productOpen, setProductOpen] = useState(false); // mobile products dropdown
   const menuRef = useRef(null);
 
-  // Close on Escape
+  // Close on Escape key
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
@@ -21,7 +21,7 @@ export default function Navbar() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Click outside to close (menu + dropdown)
+  // Click outside to close menu & dropdown
   useEffect(() => {
     const onDocClick = (e) => {
       if (!menuRef.current) return;
@@ -34,14 +34,14 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
-  // If drawer closes, also close product dropdown
+  // Close product dropdown if menu closes
   useEffect(() => {
     if (!menuOpen) setProductOpen(false);
   }, [menuOpen]);
 
   const handleProductToggle = (e) => {
     e.preventDefault();
-    setProductOpen((v) => !v);
+    setProductOpen((prev) => !prev);
   };
 
   const handleLinkClick = () => {
@@ -80,7 +80,7 @@ export default function Navbar() {
             </Link>
           </li>
 
-          {/* Products - NOTE: trigger is button (doesn't navigate) */}
+          {/* Products dropdown */}
           <li className={`list-items products ${productOpen ? 'open' : ''}`}>
             <button
               className="links"
@@ -96,27 +96,20 @@ export default function Navbar() {
               className={`navbar__dropdown ${productOpen ? 'open' : ''}`}
               role="menu"
             >
-              <Link
-                to="/calculator"
-                className="navbar__dropdown-item"
-                onClick={handleLinkClick}
-              >
-                Position Calculator
-              </Link>
-              <Link
-                to="/journal"
-                className="navbar__dropdown-item"
-                onClick={handleLinkClick}
-              >
-                Trade Journal
-              </Link>
-              <Link
-                to="/playbooks"
-                className="navbar__dropdown-item"
-                onClick={handleLinkClick}
-              >
-                Playbooks
-              </Link>
+              {[
+                { to: '/calculator', label: 'Position Calculator' },
+                { to: '/journal', label: 'Trade Journal' },
+                { to: '/playbooks', label: 'Playbooks' },
+              ].map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="navbar__dropdown-item"
+                  onClick={handleLinkClick}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </li>
 
@@ -134,7 +127,7 @@ export default function Navbar() {
         </ul>
       </nav>
 
-      {/* Overlay (click to close) */}
+      {/* Overlay (click closes menu) */}
       {menuOpen && (
         <div
           className="navbar__overlay"
