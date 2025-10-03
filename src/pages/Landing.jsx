@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import './_landing.scss';
+import monitorImg from '../assets/monitor.jpg'; // Import image from assets
 
 const Landing = () => {
   return (
@@ -62,7 +63,7 @@ const Landing = () => {
 
           {/* Right Image */}
           <div className="about-image">
-            <img src="src/assets/monitor.jpg" alt="CoreFx Academy Training" />
+            <img src={monitorImg} alt="CoreFx Academy Training" />
           </div>
         </div>
       </section>
