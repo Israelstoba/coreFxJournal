@@ -9,7 +9,7 @@
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: absolute;
-  z-index: 100;
+  z-index: 220;
 
   &__brand {
     width: 80px;
@@ -22,7 +22,7 @@
     }
   }
 
-  /* Nav list */
+  /* Desktop nav (unchanged behavior) */
   &__list {
     display: flex;
     justify-content: center;
@@ -45,13 +45,18 @@
         &:hover {
           color: $light;
         }
+
+        &:focus {
+          outline: 2px solid rgba($clr-prim-100, 0.18);
+          outline-offset: 3px;
+        }
       }
     }
 
     .products {
       position: relative;
 
-      /* ✅ Dropdown shows on hover (desktop) */
+      /* Desktop: hover opens floating dropdown */
       &:hover .navbar__dropdown {
         opacity: 1;
         transform: translateY(0);
@@ -60,12 +65,11 @@
     }
   }
 
-  /* Dropdown menu */
+  /* Desktop floating dropdown */
   &__dropdown {
     position: absolute;
     top: 100%;
     left: 0;
-    // margin-top: 0.5rem;
     width: 12rem;
     border-radius: 0.5rem;
     z-index: 10;
@@ -75,34 +79,32 @@
     backdrop-filter: blur(7.5px);
     -webkit-backdrop-filter: blur(7.5px);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-
     opacity: 0;
     transform: translateY(-10px);
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease;
 
-    /* ✅ Shown when .open (mobile toggle) */
     &.open {
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
     }
-  }
 
-  &__dropdown-item {
-    display: block;
-    padding: 0.5rem 1rem;
-    color: $light;
-    text-decoration: none;
-    transition: background 0.2s ease;
+    .navbar__dropdown-item {
+      display: block;
+      padding: 0.5rem 1rem;
+      color: $light;
+      text-decoration: none;
+      transition: background 0.2s ease;
 
-    &:hover {
-      background: #d6ffd4;
-      color: $clr-prim-100;
+      &:hover {
+        background: #d6ffd4;
+        color: $clr-prim-100;
+      }
     }
   }
 
-  /* ✅ Hamburger button */
+  /* Hamburger */
   &__toggle {
     display: none;
     flex-direction: column;
@@ -110,72 +112,153 @@
     background: none;
     border: none;
     cursor: pointer;
-    z-index: 110;
+    z-index: 240;
 
     span {
       width: 25px;
       height: 3px;
       background: $light;
       transition: all 0.3s ease;
+      display: block;
     }
 
     &.open span:nth-child(1) {
       transform: rotate(45deg) translateY(8px);
     }
+
     &.open span:nth-child(2) {
       opacity: 0;
     }
+
     &.open span:nth-child(3) {
       transform: rotate(-45deg) translateY(-8px);
     }
   }
 
-  /* ✅ Responsive */
+  /* Overlay used only on mobile when menu open */
+  .navbar__overlay {
+    position: fixed;
+    inset: 0; /* top:0; right:0; bottom:0; left:0 */
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 230; /* less than menu z-index */
+    backdrop-filter: none;
+  }
+
+  /* =========================
+     Mobile (≤768px) changes
+     ========================= */
   @media (max-width: 768px) {
     padding: 1rem 2rem;
 
+    /* Drawer container: slide in from right */
     &__list {
-      position: absolute;
-      top: 70px;
-      left: 0;
+      position: fixed;
+      top: 0;
       right: 0;
-      background: rgba(0, 0, 0, 0.9);
+      height: 100vh;
+      min-height: 100vh;
+      width: 90%;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem 0;
-      display: none;
+      align-items: flex-start;
+      gap: 0;
+      padding: 5rem 1.5rem 2rem;
+      transform: translateX(100%); /* hidden */
+      transition: transform 0.6s ease;
+      z-index: 240;
+      overflow-y: auto; /* scroll if long */
 
       &.active {
-        display: flex;
+        transform: translateX(0);
+      }
+
+      /* stacked items */
+      .list-items {
+        width: 100%;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+
+        .links {
+          display: block;
+          width: 100%;
+          padding: 1rem 0.5rem;
+          text-align: left;
+          font-size: 1.05rem;
+          color: $light;
+          background: transparent;
+          border: none;
+        }
       }
     }
 
+    /* show hamburger on mobile */
     &__toggle {
       display: flex;
     }
 
-    /* Dropdown should not open on hover in mobile */
+    /* Prevent hover from opening on mobile */
     .products:hover .navbar__dropdown {
-      opacity: 0;
-      transform: translateY(-10px);
-      pointer-events: none;
+      opacity: 0 !important;
+      transform: translateY(-10px) !important;
+      pointer-events: none !important;
     }
 
-    .navbar__dropdown {
-      position: static;
-      margin: 0;
+    /* Mobile: dropdown becomes part of flow so it pushes items down.
+       We support CSS-only (focus-within) and JS toggling via .open. */
+    .products {
       width: 100%;
-      box-shadow: none;
-      border: none;
-      background: transparent;
-      backdrop-filter: none;
+      display: block;
 
-      .navbar__dropdown-item {
-        padding: 0.75rem 1rem;
+      > .links {
         width: 100%;
-        text-align: center;
+        padding: 1rem 0.5rem;
+        display: inline-block;
+      }
+
+      .navbar__dropdown {
+        position: relative; /* part of flow */
+        top: auto;
+        left: auto;
+        width: 100%;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+        overflow: hidden;
+
+        max-height: 0;
+        opacity: 0;
+        pointer-events: none;
+        transition: max-height 0.35s ease, opacity 0.28s ease,
+          padding 0.28s ease;
+
+        .navbar__dropdown-item {
+          padding: 0.75rem 0.5rem;
+          display: block;
+          width: 100%;
+          text-align: left;
+          color: $light;
+        }
+      }
+
+      /* Expand via CSS focus-within or via .open (JS) */
+      &:focus-within .navbar__dropdown,
+      &.open .navbar__dropdown,
+      .navbar__dropdown.open {
+        max-height: 600px;
+        opacity: 1;
+        pointer-events: auto;
+        padding-bottom: 0.5rem;
       }
     }
-  }
+
+    /* small styling tweak for dropdown items */
+    .navbar__dropdown-item {
+      color: $light;
+      &:hover {
+        background: rgba(255, 255, 255, 0.03);
+        color: $clr-prim-100;
+      }
+    }
+  } /* end media */
 }

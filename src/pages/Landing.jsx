@@ -70,28 +70,30 @@ const Landing = () => {
 
       {/* Features Section */}
       <section className="features-section">
-        <h2>What We Offer</h2>
-        <div className="features-grid">
-          <div className="feature-card">
-            <h3>📊 Position Size Calculator</h3>
-            <p>
-              Manage your risk effectively with our simple and accurate position
-              size calculator.
-            </p>
-          </div>
-          <div className="feature-card">
-            <h3>📝 Trade Journal</h3>
-            <p>
-              Track, analyze, and optimize your trades with a detailed
-              journaling dashboard.
-            </p>
-          </div>
-          <div className="feature-card">
-            <h3>📚 Playbooks</h3>
-            <p>
-              Access proven trading strategies and structured guides to sharpen
-              your execution.
-            </p>
+        <div className="con-lg">
+          <h2>What We Offer</h2>
+          <div className="features-grid">
+            <div className="feature-card">
+              <h3>📊 Position Size Calculator</h3>
+              <p>
+                Manage your risk effectively with our simple and accurate
+                position size calculator.
+              </p>
+            </div>
+            <div className="feature-card">
+              <h3>📝 Trade Journal</h3>
+              <p>
+                Track, analyze, and optimize your trades with a detailed
+                journaling dashboard.
+              </p>
+            </div>
+            <div className="feature-card">
+              <h3>📚 Playbooks</h3>
+              <p>
+                Access proven trading strategies and structured guides to
+                sharpen your execution.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -104,110 +106,113 @@ const Landing = () => {
           an experienced trader seeking consistency, CoreFx has a mentorship
           plan tailored for you.
         </p>
+        <div className="con-lg">
+          <div className="mentorship-grid">
+            {/* Beginner Plan */}
+            <div className="mentorship-card">
+              <h3>🌱 Starter Plan</h3>
+              <p className="plan-price">$59.00</p>
+              <p className="duration">1 Month Plan</p>
 
-        <div className="mentorship-grid">
-          {/* Beginner Plan */}
-          <div className="mentorship-card">
-            <h3>🌱 Starter Plan</h3>
-            <p className="plan-price">$59.00</p>
-            <p className="duration">1 Month Plan</p>
+              <p>
+                Designed for beginners to build a strong foundation in forex
+                basics, risk management, and chart analysis.
+              </p>
+              <ul>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Forex fundamentals
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Trading psychology
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Weekly Q&A sessions
+                </li>
+              </ul>
+              <Link className="btn btn-prim" to="/signup">
+                Enroll Now
+              </Link>
+            </div>
 
-            <p>
-              Designed for beginners to build a strong foundation in forex
-              basics, risk management, and chart analysis.
-            </p>
-            <ul>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Forex fundamentals
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Trading psychology
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Weekly Q&A sessions
-              </li>
-            </ul>
-            <Link className="btn btn-prim" to="/signup">
-              Enroll Now
-            </Link>
-          </div>
+            {/* Intermediate Plan */}
+            <div className="mentorship-card">
+              <h3>🚀 Pro Plan</h3>
+              <p className="plan-price">
+                $125.00 <span>(Popular)</span>{' '}
+              </p>
+              <p className="duration">3 Months Plan</p>
 
-          {/* Intermediate Plan */}
-          <div className="mentorship-card">
-            <h3>🚀 Pro Plan</h3>
-            <p className="plan-price">
-              $125.00 <span>(Popular)</span>{' '}
-            </p>
-            <p className="duration">3 Months Plan</p>
+              <p>
+                Perfect for traders who want to refine their strategy, manage
+                risk effectively, and scale up their profits.
+              </p>
+              <ul>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Advanced strategies
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Personalized mentorship
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Trade Management Bots
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Trade reviews & feedback
+                </li>
+              </ul>
+              <Link className="btn btn-prim" to="/signup">
+                Enroll Now
+              </Link>
+            </div>
 
-            <p>
-              Perfect for traders who want to refine their strategy, manage risk
-              effectively, and scale up their profits.
-            </p>
-            <ul>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Advanced strategies
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Personalized mentorship
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Trade Management Bots
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Trade reviews & feedback
-              </li>
-            </ul>
-            <Link className="btn btn-prim" to="/signup">
-              Enroll Now
-            </Link>
-          </div>
-
-          {/* Advanced Plan */}
-          <div className="mentorship-card">
-            <h3>👑 Elite Plan</h3>
-            <p className="plan-price">$249.00</p>
-            <p className="duration">6 Months Plan</p>
-            <p>
-              For seasoned traders aiming for mastery, consistency, and
-              professional-level market analysis.
-            </p>
-            <ul>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Everything in the pro plan
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> 1-on-1 private coaching
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Free playbook
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Lifetime access to journals
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Trade Management Bots
-              </li>
-              <li>
-                {' '}
-                <span className="bullet"> ✔ </span> Exclusive trading community
-              </li>
-            </ul>
-            <Link className="btn btn-prim" to="/signup">
-              Enroll Now
-            </Link>
+            {/* Advanced Plan */}
+            <div className="mentorship-card">
+              <h3>👑 Elite Plan</h3>
+              <p className="plan-price">$249.00</p>
+              <p className="duration">6 Months Plan</p>
+              <p>
+                For seasoned traders aiming for mastery, consistency, and
+                professional-level market analysis.
+              </p>
+              <ul>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Everything in the pro plan
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> 1-on-1 private coaching
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Free playbook
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Lifetime access to
+                  journals
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Trade Management Bots
+                </li>
+                <li>
+                  {' '}
+                  <span className="bullet"> ✔ </span> Exclusive trading
+                  community
+                </li>
+              </ul>
+              <Link className="btn btn-prim" to="/signup">
+                Enroll Now
+              </Link>
+            </div>
           </div>
         </div>
       </section>

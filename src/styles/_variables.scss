@@ -1,3 +1,9 @@
+#elementInfoDiv {
+  background-color: #000 !important;
+  color: #fff !important;
+  z-index: 20000000000 !important;
+}
+
 $clr-prim-100: hsl(136, 94%, 13%);
 $clr-prim-200: hsl(136, 94%, 20%);
 $clr-prim-300: hsl(136, 94%, 40%);
@@ -56,4 +62,13 @@ $light: #fff;
   backdrop-filter: blur(7.5px);
   -webkit-backdrop-filter: blur(7.5px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.con-lg {
+  max-width: 1200px;
+  margin-inline: auto;
+}
+.con-sm {
+  max-width: 1024px;
+  margin-inline: auto;
 }
