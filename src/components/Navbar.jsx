@@ -83,7 +83,7 @@ export default function Navbar() {
           {/* Products dropdown */}
           <li className={`list-items products ${productOpen ? 'open' : ''}`}>
             <button
-              className="links"
+              className="links product-btn"
               onClick={handleProductToggle}
               aria-expanded={productOpen}
               aria-controls="products-dropdown"

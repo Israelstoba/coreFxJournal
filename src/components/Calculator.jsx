@@ -60,7 +60,7 @@ const Calculator = () => {
     const lot = riskAmt / (slPips * pipValue);
 
     setRiskAmount(riskAmt.toFixed(2));
-    setLotSize(lot.toFixed(2));
+    setLotSize(lot.toFixed(3));
   };
 
   // ✅ Toggle risk mode and auto-convert value
