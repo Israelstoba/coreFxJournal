@@ -1,8 +1,10 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
 import Calculator from './components/Calculator';
-import Footer from './components/Footer'; // ✅ Import Footer
+import Footer from './components/Footer';
+import CfxFlip from './components/CfxFlip'; // 👈 Import new page
 
 function App() {
   return (
@@ -13,8 +15,9 @@ function App() {
         <Route path="/calculator" element={<Calculator />} />
         <Route path="/journal" element={<div>Journal (Login Required)</div>} />
         <Route path="/playbooks" element={<div>Playbooks (Coming Soon)</div>} />
+        <Route path="/cfx-flip" element={<CfxFlip />} /> {/* 👈 New route */}
       </Routes>
-      <Footer /> {/* ✅ Works now */}
+      <Footer />
     </Router>
   );
 }

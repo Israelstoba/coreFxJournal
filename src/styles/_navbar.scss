@@ -7,15 +7,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: absolute;
   z-index: 220;
 
   &__brand {
-    width: 80px;
-    padding: 0.5rem;
-    border-radius: 50%;
-    background-color: $light;
+    width: 70px;
 
     &:hover {
       scale: 1.03;
@@ -110,7 +107,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    z-index: 240;
+    z-index: 500;
 
     span {
       width: 25px;
@@ -204,14 +201,19 @@
         overflow: hidden;
         opacity: 0;
         pointer-events: none;
-        transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease;
+        // transition: all 0.5s ease-in-out;
         background: rgba(255, 255, 255, 0.05);
+        border: none;
 
         &.open {
           max-height: 500px;
           opacity: 1;
           pointer-events: auto;
           padding-bottom: 0.5rem;
+          position: absolute;
+          top: 4rem;
+          transition: all 0.5s ease;
+          border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .navbar__dropdown-item {

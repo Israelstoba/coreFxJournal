@@ -1,15 +1,16 @@
 // src/components/Navbar.jsx
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import '../styles/_navbar.scss';
 import logo from '../assets/logo.png';
 
 export default function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false); // mobile drawer
-  const [productOpen, setProductOpen] = useState(false); // mobile products dropdown
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [productOpen, setProductOpen] = useState(false);
   const menuRef = useRef(null);
+  const toggleRef = useRef(null);
+  const location = useLocation();
 
-  // Close on Escape key
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
@@ -21,11 +22,12 @@ export default function Navbar() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Click outside to close menu & dropdown
   useEffect(() => {
     const onDocClick = (e) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target)) {
+      if (!menuRef.current || !toggleRef.current) return;
+      const clickedInsideMenu = menuRef.current.contains(e.target);
+      const clickedToggle = toggleRef.current.contains(e.target);
+      if (!clickedInsideMenu && !clickedToggle) {
         setMenuOpen(false);
         setProductOpen(false);
       }
@@ -34,7 +36,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
-  // Close product dropdown if menu closes
   useEffect(() => {
     if (!menuOpen) setProductOpen(false);
   }, [menuOpen]);
@@ -49,6 +50,9 @@ export default function Navbar() {
     setProductOpen(false);
   };
 
+  // Hide About & Contact only on /calculator route
+  const hideExtraLinks = location.pathname === '/calculator';
+
   return (
     <>
       <nav className="navbar" role="navigation">
@@ -58,10 +62,14 @@ export default function Navbar() {
 
         {/* Hamburger */}
         <button
+          ref={toggleRef}
           className={`navbar__toggle ${menuOpen ? 'open' : ''}`}
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((v) => !v)}
+          onClick={() => {
+            setMenuOpen((v) => !v);
+            setProductOpen(false);
+          }}
         >
           <span />
           <span />
@@ -100,6 +108,7 @@ export default function Navbar() {
                 { to: '/calculator', label: 'Position Calculator' },
                 { to: '/journal', label: 'Trade Journal' },
                 { to: '/playbooks', label: 'Playbooks' },
+                { to: '/cfx-flip', label: 'CoreFx Flip' }, // 👈 New route
               ].map((item) => (
                 <Link
                   key={item.to}
@@ -113,17 +122,21 @@ export default function Navbar() {
             </div>
           </li>
 
-          <li className="list-items">
-            <a className="links" href="#about" onClick={handleLinkClick}>
-              About
-            </a>
-          </li>
-
-          <li className="list-items">
-            <a className="links" href="#contact" onClick={handleLinkClick}>
-              Contact
-            </a>
-          </li>
+          {/* Conditionally render About and Contact */}
+          {!hideExtraLinks && (
+            <>
+              <li className="list-items">
+                <a className="links" href="#about" onClick={handleLinkClick}>
+                  About
+                </a>
+              </li>
+              <li className="list-items">
+                <a className="links" href="#contact" onClick={handleLinkClick}>
+                  Contact
+                </a>
+              </li>
+            </>
+          )}
         </ul>
       </nav>
 

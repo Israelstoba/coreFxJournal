@@ -1,0 +1,335 @@
+@use '../styles/variables' as *;
+
+/* Basic layout */
+.cfxflip-page {
+  padding: 3rem;
+  display: flex;
+  justify-content: center;
+  background: url(../assets/flipBg.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.cfxflip-card {
+  // background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  margin-top: 7rem;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Title */
+.cfxflip-title {
+  text-align: center;
+  color: $light;
+  font-size: 2.1rem;
+  margin-bottom: 1rem;
+}
+
+/* Controls row */
+.cfxflip-controls {
+  display: flex;
+  // justify-content: center;
+  flex-direction: column;
+  gap: 1rem;
+  // align-items: center;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+  color: $clr-prim-100;
+}
+
+.cfxflip-side {
+  flex: 1;
+
+  .label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: $light;
+  }
+
+  .side-toggle {
+    display: inline-flex;
+    background: $light;
+    padding: 2px;
+    border-radius: 999px;
+  }
+
+  .side-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    font-weight: 700;
+    color: $clr-prim-100;
+    cursor: pointer;
+  }
+
+  .side-btn.active {
+    background: $clr-prim-300;
+    color: #fff;
+  }
+}
+
+.cfxflip-inputs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .input-row {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 150px;
+
+    label {
+      color: $light;
+      font-weight: 400;
+      margin-bottom: 0.5rem;
+    }
+
+    input[type='number'] {
+      padding: 0.5rem 0.8rem;
+      border-radius: 999px;
+      border: 2px solid rgba(15, 122, 50, 0.12);
+      max-width: 50px;
+
+      background: #fff;
+    }
+  }
+
+  .rr-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .rr-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    .colon {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: $light;
+    }
+
+    input {
+      width: 70px;
+      text-align: center;
+    }
+  }
+}
+
+/* coin area */
+.coin-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0 1.25rem;
+  color: $light;
+}
+
+.coin {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 50%;
+  // background: linear-gradient(180deg, #f6f6f6, #e6e6e6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 6px 6px 20px rgba(0, 255, 60, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.coin img.coin-face {
+  width: 95%;
+  height: 95%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+/* spin animation triggered via .spin class */
+.coin.spin {
+  animation: cfx-coin-spin 0.9s cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+@keyframes cfx-coin-spin {
+  0% {
+    transform: rotateY(0) rotate(0);
+  }
+  40% {
+    transform: rotateY(540deg) rotate(10deg);
+  }
+  100% {
+    transform: rotateY(720deg) rotate(0deg);
+  }
+}
+
+/* buttons */
+.take-trade-btn,
+.reset-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  background-color: $clr-prim-300;
+  color: #fff;
+  cursor: pointer;
+  margin-left: 0.6rem;
+}
+
+.reset-btn {
+  background: transparent;
+  color: $light;
+  border: 1.5px solid red;
+}
+
+/* results box */
+.results-box {
+  border: 2px solid rgba(3, 10, 34, 0.06);
+  // padding: 1.2rem
+  padding-inline: 0.5rem;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.results-box h3 {
+  color: #0f7a32;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+.outcomes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  padding: 0.6rem;
+  min-height: 64px;
+}
+
+.outcome-pill {
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  min-width: 45px;
+  text-align: center;
+  font-weight: 500;
+  color: #fff;
+}
+
+.outcome-pill.win {
+  background: #0f7a32;
+  border: 2px solid $clr-prim-400;
+}
+
+.outcome-pill.loss {
+  background: #b82e2e;
+  border: 2px solid #fa8989;
+}
+
+.outcome-pill.placeholder {
+  background: rgba(3, 10, 34, 0.03);
+  opacity: 0.35;
+}
+
+/* divider */
+.divider {
+  height: 1px;
+  background: $clr-prim-300;
+}
+
+/* summary */
+.summary-row {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.summary-block {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.summary-item .label-sm {
+  color: #0f7a32;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.stat-box {
+  padding: 0.4rem 0.2rem;
+  border-radius: 8px;
+  font-weight: 800;
+  text-align: center;
+  color: #fff;
+}
+
+.stat-box.green {
+  background: #0f7a32;
+  border: 2px solid $clr-prim-400;
+}
+
+.stat-box.red {
+  background: #b82e2e;
+  border: 2px solid #fa8989;
+}
+
+.stat-box.pnl {
+  background: rgba(15, 122, 50, 0.12);
+  color: #0f7a32;
+  font-weight: 800;
+}
+
+.stat-box.rate {
+  background: #072a57;
+  color: #fff;
+  min-width: 80px;
+}
+
+/* trader status */
+.trader-status {
+  margin-top: 0.9rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.trader-status .status.profitable {
+  color: #0f7a32;
+}
+
+.trader-status .status.losing {
+  color: #b82e2e;
+}
+
+.trader-status .status.breakeven {
+  color: #333;
+}
+
+/* responsive tweaks */
+@media (max-width: 900px) {
+  .cfxflip-card {
+    width: 100%;
+    padding: 1.25rem;
+  }
+
+  .coin {
+    width: 96px;
+    height: 96px;
+  }
+}
