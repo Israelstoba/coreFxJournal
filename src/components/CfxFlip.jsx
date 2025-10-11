@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './_cfxflip.scss';
 import bullImg from '../assets/bull_head.png';
 import bearImg from '../assets/bear_head.png';
+import corefxLogo from '../assets/logo.png';
 import { Link } from 'react-router-dom';
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -78,9 +79,9 @@ export default function CfxFlip() {
   };
 
   return (
-    <div className="cfxflip-page">
+    <section className="cfxflip-page">
       <div className="cfxflip-card glass-bg">
-        <h1 className="cfxflip-title">CFX FLIP</h1>
+        <img src={corefxLogo} alt="CoreFx" className="calculator-logo" />
 
         <div className="cfxflip-controls">
           <div className="cfxflip-side">
@@ -202,29 +203,28 @@ export default function CfxFlip() {
 
           <div className="divider" />
 
-          <div className="summary-row">
-            <div className="summary-block">
-              <div className="summary-item">
-                <div className="label-sm">Total wins</div>
-                <div className="stat-box green">{totalWins}</div>
-              </div>
-
-              <div className="summary-item">
-                <div className="label-sm">Total losses</div>
-                <div className="stat-box red">{totalLosses}</div>
-              </div>
+          <div className="total-con">
+            <div className="total-content">
+              <h4 className="total-con-label">Total wins</h4>
+              <div className="total-green">{totalWins}</div>
             </div>
 
-            <div className="summary-block center">
-              <div className="label-sm">PnL (R)</div>
-              <div className="stat-box pnl">
+            <div className="total-content">
+              <h4 className="total-con-label">Total losses</h4>
+              <div className="total-red">{totalLosses}</div>
+            </div>
+          </div>
+          <div className="pnl-con">
+            <div className="pnl-content">
+              <h4 className="pnl-label">PnL (R)</h4>
+              <div className="pnl">
                 {pnlR >= 0 ? `+${pnlR.toFixed(2)}R` : `${pnlR.toFixed(2)}R`}
               </div>
             </div>
 
-            <div className="summary-block right">
-              <div className="label-sm">Win rate</div>
-              <div className="stat-box rate">{winRate}%</div>
+            <div className="pnl-content">
+              <h4 className="pnl-label">Win rate</h4>
+              <div className="rate">{winRate}%</div>
             </div>
           </div>
 
@@ -240,6 +240,6 @@ export default function CfxFlip() {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

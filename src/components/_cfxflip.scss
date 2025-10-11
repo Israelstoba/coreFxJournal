@@ -18,7 +18,7 @@
   width: 100%;
   max-width: 600px;
   text-align: center;
-  margin-top: 7rem;
+  margin-block: 7rem;
   box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
 }
 
@@ -191,9 +191,8 @@
 }
 
 .reset-btn {
-  background: transparent;
+  background-color: #b82e2e;
   color: $light;
-  border: 1.5px solid red;
 }
 
 /* results box */
@@ -217,7 +216,6 @@
   gap: 0.5rem;
   justify-content: flex-start;
   padding: 0.6rem;
-  min-height: 64px;
 }
 
 .outcome-pill {
@@ -250,56 +248,61 @@
   background: $clr-prim-300;
 }
 
-/* summary */
-.summary-row {
-  display: flex;
-  flex: 1;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.summary-block {
+/*Total  Summary */
+.total-con {
   display: flex;
   gap: 1rem;
-  align-items: center;
-}
 
-.summary-item .label-sm {
-  color: #0f7a32;
-  font-weight: 700;
-  margin-bottom: 0.3rem;
-}
+  .total-content {
+    flex-basis: 50%;
 
-.stat-box {
-  padding: 0.4rem 0.2rem;
-  border-radius: 8px;
-  font-weight: 800;
-  text-align: center;
-  color: #fff;
-}
+    .total-con-label {
+      color: $clr-prim-200;
+    }
+  }
 
-.stat-box.green {
-  background: #0f7a32;
-  border: 2px solid $clr-prim-400;
+  .total-green,
+  .total-red {
+    padding: 0.5rem;
+    border-radius: 8px;
+    color: $light;
+    margin-bottom: 0.5rem;
+  }
+  .total-green {
+    background: #0f7a32;
+    border: 2px solid $clr-prim-400;
+  }
+  .total-red {
+    background: #b82e2e;
+    border: 2px solid #fa8989;
+  }
 }
+////PnL Container /////
 
-.stat-box.red {
-  background: #b82e2e;
-  border: 2px solid #fa8989;
-}
+.pnl-con {
+  display: flex;
+  gap: 1rem;
 
-.stat-box.pnl {
-  background: rgba(15, 122, 50, 0.12);
-  color: #0f7a32;
-  font-weight: 800;
-}
+  .pnl-content {
+    flex-basis: 50%;
 
-.stat-box.rate {
-  background: #072a57;
-  color: #fff;
-  min-width: 80px;
+    .pnl,
+    .rate {
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+    .pnl {
+      background: rgba(15, 122, 50, 0.12);
+      color: #0f7a32;
+      font-weight: 800;
+    }
+
+    .rate {
+      background: #072a57;
+      color: #fff;
+      min-width: 80px;
+    }
+  }
 }
 
 /* trader status */
