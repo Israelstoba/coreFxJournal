@@ -27,9 +27,6 @@ const Footer = () => {
             <li>
               <Link to="/journal">Trade Journal</Link>
             </li>
-            <li>
-              <Link to="/playbooks">Playbooks</Link>
-            </li>
           </ul>
         </div>
 
@@ -56,7 +53,10 @@ const Footer = () => {
       </div>
 
       <div className="footer__bottom">
-        <p>© {new Date().getFullYear()} CoreFx Academy. All Rights Reserved.</p>
+        <p>
+          © {new Date().getFullYear()} CoreFx Trading Academy. All Rights
+          Reserved.
+        </p>
       </div>
     </footer>
   );

@@ -7,9 +7,26 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: absolute;
+  // position: absolute;
   z-index: 220;
+
+  position: fixed;
+  transition: background-color 0.7s ease, box-shadow 0.3s ease;
+  z-index: 220;
+  padding: 1rem 7rem;
+
+  &.scrolled {
+    background: rgba(255, 255, 255, 0.27);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(7.5px);
+    -webkit-backdrop-filter: blur(7.5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    .links {
+      color: $clr-sec-100 !important;
+      // color: $clr-prim-100 !important;
+    }
+  }
 
   &__brand {
     width: 70px;
@@ -36,6 +53,7 @@
         border: none;
         cursor: pointer;
         font: inherit;
+        font-weight: 600;
         text-decoration: none;
         transition: color 0.2s ease;
 
@@ -112,7 +130,7 @@
     span {
       width: 25px;
       height: 3px;
-      background: $light;
+      background: $clr-prim-200;
       transition: all 0.3s ease;
       display: block;
     }

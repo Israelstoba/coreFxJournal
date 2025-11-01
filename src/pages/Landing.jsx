@@ -1,8 +1,33 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './_landing.scss';
 import monitorImg from '../assets/monitor.jpg'; // Import image from assets
 
 const Landing = () => {
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showTelegram, setShowTelegram] = useState(false); // 👈 New state for Telegram btn
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+
+    // Show Telegram btn 10 seconds after page load
+    const telegramTimer = setTimeout(() => {
+      setShowTelegram(true);
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(telegramTimer);
+    };
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <>
       {/* Hero Section */}
@@ -24,7 +49,6 @@ const Landing = () => {
       {/* About Section */}
       <section className="about-section">
         <div className="about-grid">
-          {/* Left Content */}
           <div className="about-content">
             <h2 className="about-title">About CoreFx</h2>
             <p>
@@ -61,7 +85,6 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Right Image */}
           <div className="about-image">
             <img src={monitorImg} alt="CoreFx Academy Training" />
           </div>
@@ -98,7 +121,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Mentorship Plan Section */}
+      {/* Mentorship Section */}
       <section className="mentorship-section">
         <h2>Our Mentorship Plans</h2>
         <p className="mentorship-intro">
@@ -108,27 +131,23 @@ const Landing = () => {
         </p>
         <div className="con-lg">
           <div className="mentorship-grid">
-            {/* Beginner Plan */}
+            {/* Starter Plan */}
             <div className="mentorship-card">
               <h3>🌱 Starter Plan</h3>
               <p className="plan-price">$59.00</p>
               <p className="duration">1 Month Plan</p>
-
               <p>
                 Designed for beginners to build a strong foundation in forex
                 basics, risk management, and chart analysis.
               </p>
               <ul>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Forex fundamentals
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Trading psychology
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Weekly Q&A sessions
                 </li>
               </ul>
@@ -137,33 +156,28 @@ const Landing = () => {
               </Link>
             </div>
 
-            {/* Intermediate Plan */}
+            {/* Pro Plan */}
             <div className="mentorship-card">
               <h3>🚀 Pro Plan</h3>
               <p className="plan-price">
-                $125.00 <span>(Popular)</span>{' '}
+                $125.00 <span>(Popular)</span>
               </p>
               <p className="duration">3 Months Plan</p>
-
               <p>
                 Perfect for traders who want to refine their strategy, manage
                 risk effectively, and scale up their profits.
               </p>
               <ul>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Advanced strategies
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Personalized mentorship
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Trade Management Bots
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Trade reviews & feedback
                 </li>
               </ul>
@@ -172,7 +186,7 @@ const Landing = () => {
               </Link>
             </div>
 
-            {/* Advanced Plan */}
+            {/* Elite Plan */}
             <div className="mentorship-card">
               <h3>👑 Elite Plan</h3>
               <p className="plan-price">$249.00</p>
@@ -183,30 +197,22 @@ const Landing = () => {
               </p>
               <ul>
                 <li>
-                  {' '}
-                  <span className="bullet"> ✔ </span> Everything in the pro plan
+                  <span className="bullet"> ✔ </span> Everything in pro plan
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> 1-on-1 private coaching
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Free playbook
                 </li>
                 <li>
-                  {' '}
-                  <span className="bullet"> ✔ </span> Lifetime access to
-                  journals
+                  <span className="bullet"> ✔ </span> Lifetime journal access
                 </li>
                 <li>
-                  {' '}
                   <span className="bullet"> ✔ </span> Trade Management Bots
                 </li>
                 <li>
-                  {' '}
-                  <span className="bullet"> ✔ </span> Exclusive trading
-                  community
+                  <span className="bullet"> ✔ </span> Exclusive community
                 </li>
               </ul>
               <Link className="btn btn-prim" to="/signup">
@@ -217,7 +223,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Call to Action */}
+      {/* CTA */}
       <section className="cta-section">
         <h2>Ready to Start Your Trading Journey?</h2>
         <p>
@@ -228,6 +234,24 @@ const Landing = () => {
           Join Now
         </Link>
       </section>
+
+      {/* Scroll-to-top button */}
+      <button
+        className={`scroll-top-btn ${showScrollTop ? 'show' : ''}`}
+        onClick={scrollToTop}
+      >
+        <i className="fas fa-arrow-up"></i>
+      </button>
+
+      {/* Telegram Floating Button */}
+      <a
+        href="https://t.me/corefxtradingacademy" // 🔗 replace with your Telegram
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`telegram-btn ${showTelegram ? 'show' : ''}`}
+      >
+        <i className="fab fa-telegram-plane"></i>
+      </a>
     </>
   );
 };

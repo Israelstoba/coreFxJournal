@@ -7,10 +7,12 @@ import logo from '../assets/logo.png';
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [productOpen, setProductOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef(null);
   const toggleRef = useRef(null);
   const location = useLocation();
 
+  // Close menu on Escape
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
@@ -22,6 +24,7 @@ export default function Navbar() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  // Close menu if clicked outside
   useEffect(() => {
     const onDocClick = (e) => {
       if (!menuRef.current || !toggleRef.current) return;
@@ -50,12 +53,21 @@ export default function Navbar() {
     setProductOpen(false);
   };
 
+  // Detect scroll for sticky effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Hide About & Contact only on /calculator route
   const hideExtraLinks = location.pathname === '/calculator';
 
   return (
     <>
-      <nav className="navbar" role="navigation">
+      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} role="navigation">
         <Link to="/" className="navbar__logo" onClick={handleLinkClick}>
           <img src={logo} alt="CoreFx" className="navbar__brand" />
         </Link>
@@ -107,8 +119,7 @@ export default function Navbar() {
               {[
                 { to: '/calculator', label: 'Position Calculator' },
                 { to: '/journal', label: 'Trade Journal' },
-                { to: '/playbooks', label: 'Playbooks' },
-                { to: '/cfx-flip', label: 'CoreFx Flip' }, // 👈 New route
+                { to: '/cfx-flip', label: 'CoreFx Flip' },
               ].map((item) => (
                 <Link
                   key={item.to}
@@ -122,7 +133,6 @@ export default function Navbar() {
             </div>
           </li>
 
-          {/* Conditionally render About and Contact */}
           {!hideExtraLinks && (
             <>
               <li className="list-items">
@@ -140,7 +150,7 @@ export default function Navbar() {
         </ul>
       </nav>
 
-      {/* Overlay (click closes menu) */}
+      {/* Overlay */}
       {menuOpen && (
         <div
           className="navbar__overlay"
