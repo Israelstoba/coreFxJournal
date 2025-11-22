@@ -28,13 +28,26 @@
     }
   }
 
-  &__brand {
-    width: 70px;
+  .navbar__logo {
+    display: flex;
+    background-color: $light;
+    border-radius: 50%;
+    .navbar__brand {
+      width: 70px;
 
-    &:hover {
-      scale: 1.03;
+      &:hover {
+        scale: 1.03;
+      }
     }
   }
+
+  // &__brand {
+  //   width: 70px;
+
+  //   &:hover {
+  //     scale: 1.03;
+  //   }
+  // }
 
   /* Desktop nav */
   &__list {

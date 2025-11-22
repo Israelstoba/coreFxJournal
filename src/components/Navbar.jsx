@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/_navbar.scss';
-import logo from '../assets/logo.png';
+import logo from '../assets/cfx Logo.png';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -118,7 +118,7 @@ export default function Navbar() {
             >
               {[
                 { to: '/calculator', label: 'Position Calculator' },
-                { to: '/journal', label: 'Trade Journal' },
+                { to: '/dashboard', label: 'Trade Journal' },
                 { to: '/cfx-flip', label: 'CoreFx Flip' },
               ].map((item) => (
                 <Link

@@ -25,7 +25,7 @@ const Footer = () => {
               <Link to="/calculator">Position Calculator</Link>
             </li>
             <li>
-              <Link to="/journal">Trade Journal</Link>
+              <Link to="/dashboard">Trade Journal</Link>
             </li>
           </ul>
         </div>

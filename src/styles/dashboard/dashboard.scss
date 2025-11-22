@@ -1,3 +1,12 @@
+@use '../../styles/variables' as *;
+// dashboard.scss
+@import './overview';
+@import './journal';
+@import './playbooks';
+@import './cfxbots';
+@import './settings';
+@import './profile';
+
 .dashboard-layout {
   display: flex;
   height: 100vh;
@@ -30,6 +39,9 @@
 .sidebar {
   width: 180px;
   background: #0c3299;
+  // background: #26c069;
+  background: #4caf50;
+  background: $clr-prim-100;
   color: #fff;
   transition: all 0.3s ease;
   // position: fixed;
@@ -53,17 +65,26 @@
 
   .sidebar-header {
     padding: 1.5rem;
-    background: #09246b;
+    background: $light;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+
     display: flex;
     justify-content: center;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
 
-    img {
-      width: 40px; // ✅ reduced logo size
-      height: auto;
-      object-fit: contain;
+    .sidebar-logo {
+      display: flex;
+      // padding: 0.3rem;
+      border-radius: 50%;
+
+      background-color: $light;
+      img {
+        width: 60px; // ✅ reduced logo size
+        height: auto;
+        // object-fit: contain;
+      }
     }
 
     h2 {
@@ -75,9 +96,9 @@
     }
 
     .toggle-btn {
-      font-size: 1.3rem;
-      color: #fff;
-      background-color: #09246b;
+      font-size: 1.2rem;
+      color: $light;
+      background-color: $clr-prim-300;
       height: 30px;
       width: 30px;
       padding: 0.5rem;
@@ -91,7 +112,8 @@
       place-content: center;
 
       &:hover {
-        color: #4caf50;
+        font-size: 1.4rem;
+        color: $light;
       }
     }
   }
@@ -106,50 +128,79 @@
       margin: 0;
 
       .sidebar-list-items {
-        padding: 1rem 1.5rem;
-        cursor: pointer;
         display: flex;
+        justify-content: center;
         align-items: center;
-        font-weight: 500;
-        transition: background 0.3s, padding 0.3s;
-        font-size: 0.8rem;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        color: #dfe6e9;
+        // border-radius: 0.5rem;
+        // margin-left: 1rem;
+        transition: background 0.3s ease, color 0.3s ease;
 
         &:hover {
-          background: #4caf50;
+          background: rgba(255, 255, 255, 0.1);
         }
 
-        span {
-          transition: opacity 0.3s;
-        }
+        &.active {
+          background: rgba(76, 175, 80, 0.2); // green tint for active link
+          color: #4caf50;
 
-        .icon {
-          margin-right: 0.5rem;
+          .icon {
+            color: #4caf50;
+          }
         }
       }
+
+      // .sidebar-list-items {
+      //   padding: 1rem 1.5rem;
+      //   cursor: pointer;
+      //   display: flex;
+      //   align-items: center;
+      //   font-weight: 500;
+      //   transition: background 0.3s, padding 0.3s;
+      //   font-size: 0.9rem;
+
+      //   &:hover {
+      //     background: #308633;
+      //   }
+
+      //   span {
+      //     transition: opacity 0.3s;
+      //   }
+
+      //   .icon {
+      //     margin-right: 0.5rem;
+      //   }
+      // }
     }
   }
-
-  .logout-btn {
-    margin: 1rem;
-    padding: 0.8rem 1rem;
-    background: #4caf50;
-    border: none;
-    color: #fff;
-    font-weight: 600;
-    border-radius: 6px;
+  .sidebar-footer {
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    align-items: center;
+    .logout-btn {
+      margin: 1rem;
+      padding: 0.8rem 1rem;
+      background: #4caf50;
+      border: none;
+      color: #fff;
+      font-weight: 600;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
 
-    &:hover {
-      background: #3e8e41;
-    }
+      &:hover {
+        background: #3e8e41;
+      }
 
-    svg {
-      font-size: 1.1rem;
+      svg {
+        font-size: 1.1rem;
+      }
     }
   }
 }
@@ -206,7 +257,7 @@
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
-    transform: translateX(-100%);
+    transform: translateX(-120%);
     &.open {
       transform: translateX(0);
     }

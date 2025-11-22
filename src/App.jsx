@@ -14,6 +14,11 @@ import CfxFlip from './components/CfxFlip';
 // ✅ Dashboard imports
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import Overview from './pages/dashboard/Overview';
+import Journal from './pages/dashboard/Journal';
+import Playbooks from './pages/dashboard/Playbooks';
+import CfxBot from './pages/dashboard/CfxBot';
+import Settings from './pages/dashboard/Settings';
+import Profile from './pages/dashboard/Profile';
 
 function App() {
   return (
@@ -66,24 +71,27 @@ function App() {
           }
         />
 
-        {/* 💼 Dashboard Pages (No Navbar + Footer) */}
-        {/* Redirect journal and /dashboard → /dashboard/overview */}
-        <Route
-          path="/journal"
-          element={<Navigate to="/dashboard/overview" replace />}
-        />
+        {/* 💼 Dashboard Section (No Navbar or Footer) */}
         <Route
           path="/dashboard"
           element={<Navigate to="/dashboard/overview" replace />}
         />
 
+        {/* 🧭 Nested Dashboard Routes */}
+        <Route path="/dashboard/*" element={<DashboardLayout />}>
+          <Route path="overview" element={<Overview />} />
+          <Route path="journal" element={<Journal />} />
+          <Route path="playbooks" element={<Playbooks />} />
+          <Route path="bots" element={<CfxBot />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="*" element={<Navigate to="overview" replace />} />
+        </Route>
+
+        {/* 🎯 Direct shortcut to Journal */}
         <Route
-          path="/dashboard/overview"
-          element={
-            <DashboardLayout>
-              <Overview />
-            </DashboardLayout>
-          }
+          path="/journal"
+          element={<Navigate to="/dashboard/journal" replace />}
         />
       </Routes>
     </Router>

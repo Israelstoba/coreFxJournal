@@ -1,15 +1,17 @@
 #elementInfoDiv {
-  background-color: #000 !important;
+  background-color: #434343 !important;
   color: #fff !important;
   z-index: 20000000000 !important;
+  font-size: 1.2rem;
 }
 
-$clr-prim-100: hsl(136, 94%, 13%);
-$clr-prim-200: hsl(136, 94%, 20%);
-$clr-prim-300: hsl(136, 94%, 40%);
-$clr-prim-400: hsl(136, 94%, 90%);
-$clr-prim-500: hsl(136, 94%, 95%);
+$clr-prim-100: hsl(122, 39%, 20%);
+$clr-prim-200: hsl(122, 39%, 35%);
+$clr-prim-300: hsl(122, 39%, 49%);
+$clr-prim-400: hsl(122, 39%, 90%);
+$clr-prim-500: hsl(122, 39%, 95%);
 
+$clr-sec-100: hsl(218, 100%, 16%);
 $clr-sec-100: hsl(218, 100%, 16%);
 $clr-sec-200: hsl(218, 100%, 25%);
 $clr-sec-300: hsl(218, 100%, 50%);
