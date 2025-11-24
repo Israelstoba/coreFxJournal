@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     port: 8000,
   },
-  base: process.env.VITE_BASE_PATH || '/coreFxJournal',
+  base: process.env.VITE_BASE_PATH || '/',
   resolve: {
     alias: {
       '@': '/src',
