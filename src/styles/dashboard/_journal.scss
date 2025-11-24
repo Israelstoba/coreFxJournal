@@ -26,18 +26,19 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      background: $clr-prim-300;
+      background: linear-gradient(90deg, #4caf50, #0c3299);
       color: $light;
       border: none;
       border-radius: 8px;
       padding: 0.6rem 1.2rem;
       cursor: pointer;
       font-weight: 600;
-      transition: background 0.25s ease, transform 0.25s ease;
+      transition: all 0.5s ease;
 
       &:hover {
-        background: $clr-prim-200;
-        transform: translateY(-2px);
+        background: linear-gradient(90deg, #0c3299, #4caf50);
+
+        transform: scale(1.03);
       }
 
       svg {
