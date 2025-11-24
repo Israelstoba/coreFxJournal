@@ -11,7 +11,7 @@ import {
   FaSignOutAlt,
 } from 'react-icons/fa';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import logo from '@/assets/cFx logo.png';
+import logo from '@/assets/cfx_logo.png';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();

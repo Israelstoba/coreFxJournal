@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/_navbar.scss';
-import logo from '../assets/cFx Logo.png';
+import logo from '../assets/cfx_logo.png';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
