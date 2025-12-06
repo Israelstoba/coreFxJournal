@@ -12,44 +12,62 @@ const Journal = () => {
   const [selectedJournal, setSelectedJournal] = useState(null);
 
   // ========================
-  // LOAD JOURNALS
+  // LOAD JOURNALS ON MOUNT
   // ========================
   useEffect(() => {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      setJournals(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setJournals(parsed);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading journals:', err);
     }
   }, []);
 
   // ========================
-  // SAVE JOURNALS
+  // SAVE JOURNALS ON CHANGE
   // ========================
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(journals));
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(journals));
+    } catch (err) {
+      console.error('Error saving journals:', err);
+    }
   }, [journals]);
 
-  // Add New Journal
+  // ========================
+  // ADD NEW JOURNAL
+  // ========================
   const handleAddJournal = (newJournal) => {
     const journalWithMeta = {
       ...newJournal,
       id: Date.now(),
       dateCreated: new Date().toLocaleDateString(),
     };
+
     setJournals((prev) => [...prev, journalWithMeta]);
     setShowModal(false);
   };
 
-  // Delete Journal
+  // ========================
+  // DELETE JOURNAL + TRADES
+  // ========================
   const handleDeleteJournal = (id) => {
     if (window.confirm('Are you sure you want to delete this journal?')) {
-      setJournals((prev) => prev.filter((journal) => journal.id !== id));
+      setJournals((prev) => prev.filter((j) => j.id !== id));
 
-      // ALSO delete its trades
+      // remove linked trades
       localStorage.removeItem(`corefx_journal_${id}_trades`);
     }
   };
 
-  // Open selected journal
+  // ========================
+  // OPEN SELECTED JOURNAL
+  // ========================
   const handleOpenJournal = (journal) => {
     setSelectedJournal(journal);
   };
@@ -58,6 +76,9 @@ const Journal = () => {
     setSelectedJournal(null);
   };
 
+  // ========================
+  // SHOW JOURNAL DETAILS
+  // ========================
   if (selectedJournal) {
     return (
       <JournalDetails
@@ -68,10 +89,14 @@ const Journal = () => {
     );
   }
 
+  // ========================
+  // JOURNAL LIST VIEW
+  // ========================
   return (
     <div className="journal-page">
       <div className="journal-header">
         <h2>My Journals</h2>
+
         <button className="add-journal-btn" onClick={() => setShowModal(true)}>
           <PlusCircle size={18} />
           Add Journal

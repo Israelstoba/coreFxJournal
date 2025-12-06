@@ -73,7 +73,7 @@
 
     button {
       margin-top: 1.2rem;
-      background: $clr-prim-300;
+      background: linear-gradient(90deg, #4caf50, #0c3299);
       border: none;
       color: $light;
       border-radius: 6px;
@@ -83,7 +83,7 @@
       transition: all 0.3s ease;
 
       &:hover {
-        background: $clr-prim-200;
+        background: linear-gradient(90deg, #0c3299, #4caf50);
         transform: scale(1.03);
       }
     }
