@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import corefxLogo from '../assets/logo.png';
 import './_calculator.scss';
 
-const API_KEY = 'demo'; // 🔑 replace with your real Alpha Vantage key
+const API_KEY = 'demo'; // Alpha Vantage FX
+const COINGECKO_URL =
+  'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
+const METALS_API_URL =
+  'https://metals-api.com/api/latest?access_key=YOUR_KEY&base=USD&symbols=XAU,XAG';
 
 const Calculator = () => {
   const [balance, setBalance] = useState('');
@@ -10,74 +14,125 @@ const Calculator = () => {
   const [slPips, setSlPips] = useState('');
   const [lotSize, setLotSize] = useState(null);
   const [riskAmount, setRiskAmount] = useState(null);
-  const [riskMode, setRiskMode] = useState('%'); // "%" or "$"
+  const [riskMode, setRiskMode] = useState('%');
   const [instrument, setInstrument] = useState('');
-  const [usdJpyRate, setUsdJpyRate] = useState(150); // fallback default
 
-  // ✅ Fetch live USD/JPY price only once on page load
+  // Live prices
+  const [usdJpyRate, setUsdJpyRate] = useState(150);
+  const [xauUsdRate, setXauUsdRate] = useState(null);
+  const [xagUsdRate, setXagUsdRate] = useState(null);
+  const [btcUsdRate, setBtcUsdRate] = useState(null);
+  const [us30Rate, setUs30Rate] = useState(null);
+  const [nas100Rate, setNas100Rate] = useState(null);
+  const [spx500Rate, setSpx500Rate] = useState(null);
+
   useEffect(() => {
-    const fetchRate = async () => {
-      try {
-        const res = await fetch(
-          `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=${API_KEY}`
-        );
-        const data = await res.json();
+    // FX USD/JPY
+    fetch(
+      `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=${API_KEY}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
         const rate =
           data?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate'];
-        if (rate) {
-          setUsdJpyRate(parseFloat(rate));
-          console.log('✅ Live USD/JPY:', rate);
-        } else {
-          console.warn('⚠️ No USD/JPY rate in response', data);
-        }
-      } catch (err) {
-        console.error('Error fetching USD/JPY:', err);
-      }
-    };
+        if (rate) setUsdJpyRate(parseFloat(rate));
+      })
+      .catch(console.error);
 
-    fetchRate(); // only once
+    // Metals (XAU, XAG)
+    fetch(METALS_API_URL)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.rates) {
+          setXauUsdRate(data.rates.XAU);
+          setXagUsdRate(data.rates.XAG);
+        }
+      })
+      .catch(console.error);
+
+    // Crypto BTC/USD
+    fetch(COINGECKO_URL)
+      .then((res) => res.json())
+      .then((data) => setBtcUsdRate(data.bitcoin.usd))
+      .catch(console.error);
+
+    // Indices (Yahoo Finance)
+    fetch('https://yahoo-finance-api.vercel.app/quote?symbols=^DJI,^IXIC,^GSPC')
+      .then((res) => res.json())
+      .then((data) => {
+        setUs30Rate(data['^DJI']?.regularMarketPrice || null);
+        setNas100Rate(data['^IXIC']?.regularMarketPrice || null);
+        setSpx500Rate(data['^GSPC']?.regularMarketPrice || null);
+      })
+      .catch(console.error);
   }, []);
 
-  // ✅ pip values per instrument type
-  const getPipValue = (pair) => {
-    if (pair.includes('JPY')) return 1000 / usdJpyRate; // dynamic pip value for JPY pairs
-    if (pair === 'XAU/USD') return 1; // Gold
-    return 10; // Standard USD-quoted pairs
+  const getPipValue = (symbol) => {
+    if (symbol.includes('JPY')) return 1000 / usdJpyRate;
+    if (symbol === 'XAU/USD') return 1;
+    if (symbol === 'XAG/USD') return 0.1;
+    if (symbol === 'BTC/USD') return 1;
+    if (['US30', 'NAS100', 'SPX500'].includes(symbol)) return 1;
+    return 10;
   };
 
-  // ✅ Calculate lot size
   const calculate = () => {
     if (!balance || !risk || !slPips || !instrument) return;
 
-    let riskAmt = riskMode === '%' ? balance * (risk / 100) : parseFloat(risk);
+    const riskAmt =
+      riskMode === '%' ? balance * (risk / 100) : parseFloat(risk);
+    let adjustedSlPips = parseFloat(slPips);
+
+    const specialInstruments = [
+      'XAU/USD',
+      'XAG/USD',
+      'BTC/USD',
+      'US30',
+      'NAS100',
+      'SPX500',
+    ];
+    if (specialInstruments.includes(instrument) && adjustedSlPips < 50)
+      adjustedSlPips *= 100;
 
     const pipValue = getPipValue(instrument);
-    if (!pipValue || pipValue === 0) {
-      alert('Live price not available yet, please wait...');
-      return;
-    }
-
-    const lot = riskAmt / (slPips * pipValue);
+    const lot = riskAmt / (adjustedSlPips * pipValue);
 
     setRiskAmount(riskAmt.toFixed(2));
     setLotSize(lot.toFixed(3));
   };
 
-  // ✅ Toggle risk mode and auto-convert value
   const toggleRiskMode = () => {
     if (!balance) {
       setRiskMode(riskMode === '%' ? '$' : '%');
       return;
     }
-
     if (riskMode === '%') {
-      const dollarValue = (balance * (risk / 100)).toFixed(2);
-      setRisk(dollarValue);
+      setRisk((balance * (risk / 100)).toFixed(2));
       setRiskMode('$');
     } else {
-      const percentValue = ((risk / balance) * 100).toFixed(2);
-      setRisk(percentValue);
+      setRisk(((risk / balance) * 100).toFixed(2));
       setRiskMode('%');
+    }
+  };
+
+  const getLivePrice = () => {
+    switch (instrument) {
+      case 'USD/JPY':
+        return usdJpyRate?.toFixed(3);
+      case 'XAU/USD':
+        return xauUsdRate?.toFixed(2);
+      case 'XAG/USD':
+        return xagUsdRate?.toFixed(2);
+      case 'BTC/USD':
+        return btcUsdRate?.toFixed(2);
+      case 'US30':
+        return us30Rate?.toFixed(2);
+      case 'NAS100':
+        return nas100Rate?.toFixed(2);
+      case 'SPX500':
+        return spx500Rate?.toFixed(2);
+      default:
+        return null;
     }
   };
 
@@ -96,42 +151,55 @@ const Calculator = () => {
             placeholder="Enter account size"
           />
 
-          <label>Trading Instrument:</label>
+          <label>Instrument:</label>
           <select
             value={instrument}
             onChange={(e) => setInstrument(e.target.value)}
           >
             <option value="" disabled>
-              Select trading instrument
+              Select instrument
             </option>
-            <option>EUR/USD</option>
-            <option>GBP/USD</option>
-            <option>USD/CAD</option>
-            <option>GBP/JPY</option>
-            <option>USD/JPY</option>
-            <option>AUD/CAD</option>
-            <option>XAU/USD</option>
+            <optgroup label="Major Pairs">
+              <option>EUR/USD</option>
+              <option>GBP/USD</option>
+              <option>USD/JPY</option>
+              <option>USD/CHF</option>
+              <option>USD/CAD</option>
+              <option>AUD/USD</option>
+              <option>NZD/USD</option>
+            </optgroup>
+            <optgroup label="Minor Pairs">
+              <option>EUR/GBP</option>
+              <option>EUR/JPY</option>
+              <option>GBP/JPY</option>
+              <option>AUD/CAD</option>
+              <option>NZD/JPY</option>
+            </optgroup>
+            <optgroup label="Metals">
+              <option>XAU/USD</option>
+              <option>XAG/USD</option>
+            </optgroup>
+            <optgroup label="Crypto">
+              <option>BTC/USD</option>
+            </optgroup>
+            <optgroup label="Indices">
+              <option>US30</option>
+              <option>NAS100</option>
+              <option>SPX500</option>
+            </optgroup>
           </select>
 
-          {/* ✅ Show USD/JPY live rate if selected */}
-          {instrument.includes('JPY') && (
-            <div className="rate-box">
-              <small className="live-price">
-                Live USD/JPY: {usdJpyRate.toFixed(3)}
-              </small>
-            </div>
+          {getLivePrice() && (
+            <small className="live-price">{`Live: ${getLivePrice()}`}</small>
           )}
 
-          {/* ✅ Risk Tolerance with unit */}
-          <label style={{ color: 'white' }}>Risk Tolerance ({riskMode}):</label>
+          <label>Risk ({riskMode}):</label>
           <div className="risk-row">
             <input
               type="number"
               value={risk}
               onChange={(e) => setRisk(e.target.value)}
-              placeholder={
-                riskMode === '%' ? 'Enter risk %' : 'Enter risk amount ($)'
-              }
+              placeholder={riskMode === '%' ? 'Enter %' : 'Enter $ amount'}
             />
             <span className="unit">{riskMode}</span>
             <button type="button" className="swap-btn" onClick={toggleRiskMode}>
@@ -144,7 +212,7 @@ const Calculator = () => {
             type="number"
             value={slPips}
             onChange={(e) => setSlPips(e.target.value)}
-            placeholder="Enter stop loss pip"
+            placeholder="Enter SL pips (TradingView style allowed)"
           />
 
           <button className="calculate-btn" onClick={calculate}>
