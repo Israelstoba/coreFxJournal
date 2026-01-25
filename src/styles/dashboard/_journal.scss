@@ -417,7 +417,7 @@
       border: none;
       background: none;
       cursor: pointer;
-      color: #ccc;
+      color: #bababa;
       transition: transform 0.2s ease, color 0.2s ease;
 
       &.edit:hover {
@@ -809,6 +809,542 @@
         justify-content: center;
       }
     }
+  }
+}
+
+// ===============================
+// ENHANCED JOURNAL DETAILS STYLES
+// ===============================
+
+// View Tabs
+.view-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+
+  .view-tab {
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.5);
+    color: $clr-prim-100;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &.active {
+      background: linear-gradient(90deg, #4caf50, #0c3299);
+      color: $light;
+    }
+  }
+}
+
+// Filters Section
+.filters-section {
+  margin-bottom: 1.5rem;
+  padding: 1.2rem;
+  border-radius: 12px;
+
+  .filters-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    color: $clr-sec-200;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    h3 {
+      margin: 0;
+      font-weight: 600;
+    }
+  }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+
+    input,
+    select {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.5);
+      color: $text;
+      font-size: 0.95rem;
+      transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+      outline: none;
+      width: 100%;
+
+      &::placeholder {
+        color: #999;
+      }
+
+      &:focus {
+        border-color: #4caf50;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      &:hover {
+        border-color: #4caf50;
+        background: rgba(255, 255, 255, 0.6);
+      }
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23555' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1rem;
+      cursor: pointer;
+
+      option {
+        background: $light;
+        color: $text;
+        padding: 0.5rem 1rem;
+
+        &:hover,
+        &:checked {
+          background: #4caf50 !important;
+          color: $light !important;
+        }
+      }
+    }
+  }
+}
+
+// Calendar View
+.calendar-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.2rem;
+
+  .empty-calendar {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #aaa;
+    @extend .glass-bg;
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  .calendar-card {
+    @extend .glass-bg;
+    padding: 1.2rem;
+    border-radius: 16px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    &.profit-day {
+      border: 2px solid #4caf50;
+    }
+
+    &.loss-day {
+      border: 2px solid #ff4d4d;
+    }
+
+    .calendar-date {
+      margin: 0 0 12px 0;
+      color: $clr-sec-200;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .day-pnl {
+      margin-bottom: 12px;
+      font-size: 1.5rem;
+      font-weight: bold;
+
+      &.positive {
+        color: #4caf50;
+      }
+
+      &.negative {
+        color: #ff4d4d;
+      }
+    }
+
+    .calendar-trade {
+      margin-bottom: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.4);
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .trade-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+
+        .trade-pair {
+          font-weight: bold;
+          color: $clr-prim-100;
+          font-size: 0.95rem;
+        }
+
+        .trade-pnl {
+          font-size: 0.9rem;
+          font-weight: bold;
+
+          &.positive {
+            color: #4caf50;
+          }
+
+          &.negative {
+            color: #ff4d4d;
+          }
+        }
+      }
+
+      .trade-info {
+        font-size: 0.8rem;
+        color: #555;
+      }
+    }
+  }
+}
+
+// Analytics View
+.analytics-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.2rem;
+
+  .stat-card {
+    @extend .glass-bg;
+    padding: 1.5rem;
+    border-radius: 16px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    h3 {
+      color: #777;
+      font-size: 0.9rem;
+      margin: 0 0 8px 0;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: $clr-sec-200;
+      line-height: 1.2;
+    }
+
+    .stat-detail {
+      font-size: 0.85rem;
+      color: #777;
+      margin-top: 4px;
+    }
+
+    &.total-trades {
+      background: rgba(255, 255, 255, 0.27);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    &.win-rate {
+      background: rgba(76, 175, 80, 0.1);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+
+      .stat-value {
+        color: #4caf50;
+      }
+    }
+
+    &.total-pnl {
+      &.profit {
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+
+        .stat-value {
+          color: #4caf50;
+        }
+      }
+
+      &.loss {
+        background: rgba(255, 77, 77, 0.1);
+        border: 1px solid rgba(255, 77, 77, 0.3);
+
+        .stat-value {
+          color: #ff4d4d;
+        }
+      }
+    }
+
+    &.avg-rr {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+
+      .stat-value {
+        color: #f5a623;
+      }
+    }
+
+    &.performance-by-pair {
+      grid-column: span 2;
+
+      h3 {
+        color: $clr-sec-200;
+        margin-bottom: 16px;
+        font-weight: 600;
+        font-size: 1rem;
+      }
+
+      .no-data {
+        text-align: center;
+        color: #aaa;
+        padding: 20px;
+        font-size: 0.95rem;
+      }
+
+      .pair-performance {
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        transition: background 0.2s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .pair-name {
+          color: $clr-prim-100;
+          font-weight: bold;
+          font-size: 0.95rem;
+        }
+
+        .pair-stats {
+          display: flex;
+          gap: 16px;
+          align-items: center;
+
+          .pair-details {
+            color: #555;
+            font-size: 0.9rem;
+          }
+
+          .pair-pnl {
+            font-weight: bold;
+            font-size: 0.95rem;
+
+            &.positive {
+              color: #4caf50;
+            }
+
+            &.negative {
+              color: #ff4d4d;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Table specific styles for enhanced version
+.trade-table {
+  .pair-cell {
+    font-weight: bold;
+    color: $clr-prim-200;
+  }
+
+  th {
+    white-space: nowrap;
+  }
+
+  td {
+    white-space: nowrap;
+  }
+}
+
+// Screenshot preview in modal
+.screenshot-preview {
+  margin-top: 10px;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #333;
+  display: block;
+}
+
+// Enhanced form row for screenshot upload
+.form-row {
+  margin-top: 6px;
+
+  input[type='file'] {
+    width: 100%;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid #222;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+
+    &::-webkit-file-upload-button {
+      background: #4caf50;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #43a047;
+      }
+    }
+
+    &::file-selector-button {
+      background: #4caf50;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #43a047;
+      }
+    }
+  }
+}
+
+// Responsive design for enhanced features
+@media (max-width: 1024px) {
+  .analytics-view .stat-card.performance-by-pair {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .view-tabs {
+    .view-tab {
+      flex: 1;
+      justify-content: center;
+      min-width: 100px;
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .calendar-view {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-view {
+    grid-template-columns: 1fr;
+
+    .stat-card {
+      &.performance-by-pair {
+        grid-column: span 1;
+
+        .pair-performance {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+
+          .pair-stats {
+            width: 100%;
+            justify-content: space-between;
+          }
+        }
+      }
+    }
+  }
+
+  .trade-table-wrapper {
+    font-size: 0.8rem;
+
+    th,
+    td {
+      padding: 0.4rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .journal-header {
+    h2 {
+      font-size: 1.2rem;
+    }
+
+    button {
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .stat-card .stat-value {
+    font-size: 2rem;
+  }
+
+  .calendar-card .day-pnl {
+    font-size: 1.2rem;
   }
 }
 

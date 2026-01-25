@@ -1,66 +1,569 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, PlusCircle } from 'lucide-react';
-import TradeModal from '@/components/journal/TradeModal';
-import TradeTable from '@/components/journal/TradeTable';
+import {
+  ArrowLeft,
+  PlusCircle,
+  Calendar,
+  BarChart3,
+  Filter,
+  Table,
+  X,
+  Edit2,
+  Trash2,
+} from 'lucide-react';
 
+// Trade Modal Component
+const TradeModal = ({ onClose, onSave, editData }) => {
+  const [form, setForm] = useState({
+    date: '',
+    pair: '',
+    entry: '',
+    sl: '',
+    tp: '',
+    exit: '',
+    lotSize: '',
+    riskPercent: '',
+    session: '',
+    strategy: '',
+    entryReason: '',
+    screenshot: null,
+  });
+
+  useEffect(() => {
+    if (editData) {
+      setForm({ ...editData });
+    }
+  }, [editData]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prev) => ({ ...prev, screenshot: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (
+      !form.pair ||
+      !form.entry ||
+      !form.sl ||
+      !form.tp ||
+      !form.date ||
+      !form.lotSize ||
+      !form.riskPercent
+    ) {
+      alert('Please fill all required fields');
+      return;
+    }
+    onSave({ ...form, id: editData?.id || Date.now() });
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="trade-modal glassy-ctr">
+        <div className="modal-header">
+          <h3>{editData ? 'Edit Trade' : 'Add New Trade'}</h3>
+          <button className="close-btn" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <form className="trade-form" onSubmit={handleSubmit}>
+          <div className="form-grid">
+            <div>
+              <label>Date *</label>
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Pair *</label>
+              <select name="pair" value={form.pair} onChange={handleChange}>
+                <option value="">Select Pair</option>
+                <option value="GBP/JPY">GBP/JPY</option>
+                <option value="GBP/USD">GBP/USD</option>
+                <option value="EUR/USD">EUR/USD</option>
+                <option value="USD/JPY">USD/JPY</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Entry *</label>
+              <input
+                type="number"
+                name="entry"
+                step="0.001"
+                value={form.entry}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Stop Loss *</label>
+              <input
+                type="number"
+                name="sl"
+                step="0.001"
+                value={form.sl}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Take Profit *</label>
+              <input
+                type="number"
+                name="tp"
+                step="0.001"
+                value={form.tp}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Exit Price</label>
+              <input
+                type="number"
+                name="exit"
+                step="0.001"
+                value={form.exit}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Lot Size *</label>
+              <input
+                type="number"
+                name="lotSize"
+                step="0.01"
+                value={form.lotSize}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Risk % *</label>
+              <input
+                type="number"
+                name="riskPercent"
+                step="0.1"
+                value={form.riskPercent}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Session</label>
+              <select
+                name="session"
+                value={form.session}
+                onChange={handleChange}
+              >
+                <option value="">Select Session</option>
+                <option value="London">London</option>
+                <option value="New York">New York</option>
+                <option value="Asian">Asian</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Strategy</label>
+              <select
+                name="strategy"
+                value={form.strategy}
+                onChange={handleChange}
+              >
+                <option value="">Select Strategy</option>
+                <option value="Break & Retest">Break & Retest</option>
+                <option value="Liquidity Grab">Liquidity Grab</option>
+                <option value="Trend Continuation">Trend Continuation</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label>Entry Reason / Notes</label>
+            <textarea
+              name="entryReason"
+              value={form.entryReason}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Describe your trade setup, confluences, and reasoning..."
+            />
+          </div>
+
+          <div className="form-row">
+            <label>Screenshot / Chart Image</label>
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+            {form.screenshot && (
+              <img
+                src={form.screenshot}
+                alt="Trade screenshot"
+                className="screenshot-preview"
+              />
+            )}
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="cancel-btn" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="save-btn">
+              {editData ? 'Update Trade' : 'Save Trade'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Main Journal Details Component
 const JournalDetails = ({ selectedJournal, onBack }) => {
   const storageKey = `corefx_journal_${selectedJournal.id}_trades`;
 
   const [trades, setTrades] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editTrade, setEditTrade] = useState(null);
+  const [activeView, setActiveView] = useState('table');
+  const [filters, setFilters] = useState({
+    search: '',
+    pair: 'all',
+    session: 'all',
+    strategy: 'all',
+    dateFrom: '',
+    dateTo: '',
+  });
 
-  // ============================
-  // LOAD TRADES FROM LOCALSTORAGE
-  // ============================
+  // Load trades from localStorage on mount
   useEffect(() => {
-    const savedTrades = localStorage.getItem(storageKey);
-    if (savedTrades) {
-      setTrades(JSON.parse(savedTrades));
+    try {
+      const savedTrades = localStorage.getItem(storageKey);
+      if (savedTrades) {
+        const parsed = JSON.parse(savedTrades);
+        setTrades(parsed);
+      }
+    } catch (error) {
+      console.error('Error loading trades:', error);
     }
-  }, [selectedJournal.id]);
+  }, [storageKey]);
 
-  // ============================
-  // SAVE TRADES TO LOCALSTORAGE
-  // ============================
+  // Save trades to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(trades));
-  }, [trades]);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(trades));
+    } catch (error) {
+      console.error('Error saving trades:', error);
+    }
+  }, [trades, storageKey]);
 
-  // Add new trade
-  const openAddModal = () => {
-    setEditTrade(null);
-    setShowModal(true);
-  };
-
-  // Edit trade
-  const handleEdit = (trade) => {
-    setEditTrade(trade);
-    setShowModal(true);
-  };
-
-  // Save trade
   const handleSaveTrade = (trade) => {
     if (editTrade) {
-      // UPDATE existing trade
       setTrades((prev) =>
         prev.map((t) =>
           t.id === editTrade.id ? { ...trade, id: editTrade.id } : t
         )
       );
-      setEditTrade(null);
     } else {
-      // ADD new trade
       setTrades((prev) => [...prev, { ...trade, id: Date.now() }]);
     }
-
     setShowModal(false);
+    setEditTrade(null);
   };
 
-  // Delete trade
   const handleDelete = (id) => {
-    setTrades((prev) => prev.filter((trade) => trade.id !== id));
+    if (window.confirm('Delete this trade?')) {
+      setTrades((prev) => prev.filter((t) => t.id !== id));
+    }
   };
+
+  const calculateRR = (trade) => {
+    if (!trade.entry || !trade.sl || (!trade.tp && !trade.exit)) return 0;
+    const entry = parseFloat(trade.entry);
+    const sl = parseFloat(trade.sl);
+    const tpOrExit = trade.exit ? parseFloat(trade.exit) : parseFloat(trade.tp);
+    const isBuy = tpOrExit > entry;
+    const risk = isBuy ? entry - sl : sl - entry;
+    const reward = isBuy ? tpOrExit - entry : entry - tpOrExit;
+    return risk === 0 ? 0 : reward / risk;
+  };
+
+  const calculatePnL = (trade) => {
+    if (!trade.riskPercent) return 0;
+    const rr = calculateRR(trade);
+    return rr * parseFloat(trade.riskPercent);
+  };
+
+  const filteredTrades = trades.filter((trade) => {
+    if (
+      filters.search &&
+      !trade.pair.toLowerCase().includes(filters.search.toLowerCase()) &&
+      !trade.strategy?.toLowerCase().includes(filters.search.toLowerCase())
+    )
+      return false;
+    if (filters.pair !== 'all' && trade.pair !== filters.pair) return false;
+    if (filters.session !== 'all' && trade.session !== filters.session)
+      return false;
+    if (filters.strategy !== 'all' && trade.strategy !== filters.strategy)
+      return false;
+    if (filters.dateFrom && trade.date < filters.dateFrom) return false;
+    if (filters.dateTo && trade.date > filters.dateTo) return false;
+    return true;
+  });
+
+  const totalTrades = filteredTrades.length;
+  const winningTrades = filteredTrades.filter(
+    (t) => calculatePnL(t) > 0
+  ).length;
+  const losingTrades = filteredTrades.filter((t) => calculatePnL(t) < 0).length;
+  const winRate =
+    totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : 0;
+  const totalPnL = filteredTrades.reduce((sum, t) => sum + calculatePnL(t), 0);
+  const avgRR =
+    totalTrades > 0
+      ? (
+          filteredTrades.reduce((sum, t) => sum + calculateRR(t), 0) /
+          totalTrades
+        ).toFixed(2)
+      : 0;
+
+  const renderTableView = () => (
+    <div className="trade-table-wrapper glassy-ctr">
+      <div className="table-scroll-container">
+        <table className="trade-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Pair</th>
+              <th>Session</th>
+              <th>Entry</th>
+              <th>SL</th>
+              <th>TP</th>
+              <th>Exit</th>
+              <th>R:R</th>
+              <th>PnL %</th>
+              <th>Strategy</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTrades.length === 0 ? (
+              <tr>
+                <td colSpan="11" className="empty-table">
+                  No trades found
+                </td>
+              </tr>
+            ) : (
+              filteredTrades.map((trade) => {
+                const rr = calculateRR(trade);
+                const pnl = calculatePnL(trade);
+                return (
+                  <tr key={trade.id}>
+                    <td>{trade.date}</td>
+                    <td className="pair-cell">{trade.pair}</td>
+                    <td>{trade.session || '-'}</td>
+                    <td>{trade.entry}</td>
+                    <td>{trade.sl}</td>
+                    <td>{trade.tp}</td>
+                    <td>{trade.exit || '-'}</td>
+                    <td
+                      className={
+                        rr >= 2 ? 'rr-good' : rr >= 1 ? 'rr-mid' : 'rr-bad'
+                      }
+                    >
+                      {rr.toFixed(2)}
+                    </td>
+                    <td className={pnl > 0 ? 'positive' : 'negative'}>
+                      {pnl > 0 ? '+' : ''}
+                      {pnl.toFixed(2)}%
+                    </td>
+                    <td>{trade.strategy || '-'}</td>
+                    <td className="action-btns">
+                      <button
+                        className="edit"
+                        onClick={() => {
+                          setEditTrade(trade);
+                          setShowModal(true);
+                        }}
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        className="delete"
+                        onClick={() => handleDelete(trade.id)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderCalendarView = () => {
+    const tradesByDate = {};
+    filteredTrades.forEach((trade) => {
+      if (!tradesByDate[trade.date]) tradesByDate[trade.date] = [];
+      tradesByDate[trade.date].push(trade);
+    });
+
+    return (
+      <div className="calendar-view">
+        {Object.entries(tradesByDate).length === 0 ? (
+          <div className="empty-calendar">No trades to display</div>
+        ) : (
+          Object.entries(tradesByDate)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([date, dayTrades]) => {
+              const dayPnL = dayTrades.reduce(
+                (sum, t) => sum + calculatePnL(t),
+                0
+              );
+              return (
+                <div
+                  key={date}
+                  className={`calendar-card ${
+                    dayPnL > 0 ? 'profit-day' : 'loss-day'
+                  }`}
+                >
+                  <h4 className="calendar-date">
+                    {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </h4>
+                  <div
+                    className={`day-pnl ${
+                      dayPnL > 0 ? 'positive' : 'negative'
+                    }`}
+                  >
+                    {dayPnL > 0 ? '+' : ''}
+                    {dayPnL.toFixed(2)}%
+                  </div>
+                  {dayTrades.map((trade) => (
+                    <div key={trade.id} className="calendar-trade">
+                      <div className="trade-header">
+                        <span className="trade-pair">{trade.pair}</span>
+                        <span
+                          className={`trade-pnl ${
+                            calculatePnL(trade) > 0 ? 'positive' : 'negative'
+                          }`}
+                        >
+                          {calculatePnL(trade) > 0 ? '+' : ''}
+                          {calculatePnL(trade).toFixed(2)}%
+                        </span>
+                      </div>
+                      <div className="trade-info">
+                        {trade.strategy || 'No strategy'} • R:R{' '}
+                        {calculateRR(trade).toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })
+        )}
+      </div>
+    );
+  };
+
+  const renderAnalyticsView = () => (
+    <div className="analytics-view">
+      <div className="stat-card total-trades">
+        <h3>Total Trades</h3>
+        <div className="stat-value">{totalTrades}</div>
+      </div>
+
+      <div className="stat-card win-rate">
+        <h3>Win Rate</h3>
+        <div className="stat-value">{winRate}%</div>
+        <div className="stat-detail">
+          {winningTrades}W / {losingTrades}L
+        </div>
+      </div>
+
+      <div
+        className={`stat-card total-pnl ${totalPnL >= 0 ? 'profit' : 'loss'}`}
+      >
+        <h3>Total P&L</h3>
+        <div className="stat-value">
+          {totalPnL > 0 ? '+' : ''}
+          {totalPnL.toFixed(2)}%
+        </div>
+        {selectedJournal.accountSize && (
+          <div className="stat-detail">
+            ${((selectedJournal.accountSize * totalPnL) / 100).toFixed(2)}
+          </div>
+        )}
+      </div>
+
+      <div className="stat-card avg-rr">
+        <h3>Avg R:R</h3>
+        <div className="stat-value">{avgRR}</div>
+      </div>
+
+      <div className="stat-card performance-by-pair">
+        <h3>Performance by Pair</h3>
+        {Array.from(new Set(filteredTrades.map((t) => t.pair))).length === 0 ? (
+          <div className="no-data">No data available</div>
+        ) : (
+          Array.from(new Set(filteredTrades.map((t) => t.pair))).map((pair) => {
+            const pairTrades = filteredTrades.filter((t) => t.pair === pair);
+            const pairPnL = pairTrades.reduce(
+              (sum, t) => sum + calculatePnL(t),
+              0
+            );
+            const pairWinRate =
+              pairTrades.length > 0
+                ? (
+                    (pairTrades.filter((t) => calculatePnL(t) > 0).length /
+                      pairTrades.length) *
+                    100
+                  ).toFixed(0)
+                : 0;
+            return (
+              <div key={pair} className="pair-performance">
+                <span className="pair-name">{pair}</span>
+                <div className="pair-stats">
+                  <span className="pair-details">
+                    {pairTrades.length} trades • {pairWinRate}% WR
+                  </span>
+                  <span
+                    className={`pair-pnl ${
+                      pairPnL >= 0 ? 'positive' : 'negative'
+                    }`}
+                  >
+                    {pairPnL > 0 ? '+' : ''}
+                    {pairPnL.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="journal-details">
@@ -70,26 +573,119 @@ const JournalDetails = ({ selectedJournal, onBack }) => {
           Back
         </button>
 
-        <h2>{selectedJournal?.title || 'My Journal'}</h2>
+        <h2>{selectedJournal?.title || 'Journal'}</h2>
 
-        <button className="add-trade-btn" onClick={openAddModal}>
+        <button
+          className="add-trade-btn"
+          onClick={() => {
+            setEditTrade(null);
+            setShowModal(true);
+          }}
+        >
           <PlusCircle size={18} />
           Add Trade
         </button>
       </div>
 
-      {trades.length > 0 ? (
-        <TradeTable
-          trades={trades}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          accountSize={selectedJournal.accountSize}
-        />
-      ) : (
-        <div className="no-trades">
-          <p>No trades added yet. Click “Add Trade” to log your first one.</p>
+      <div className="view-tabs">
+        <button
+          className={`view-tab ${activeView === 'table' ? 'active' : ''}`}
+          onClick={() => setActiveView('table')}
+        >
+          <Table size={18} />
+          Table View
+        </button>
+        <button
+          className={`view-tab ${activeView === 'calendar' ? 'active' : ''}`}
+          onClick={() => setActiveView('calendar')}
+        >
+          <Calendar size={18} />
+          Calendar
+        </button>
+        <button
+          className={`view-tab ${activeView === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveView('analytics')}
+        >
+          <BarChart3 size={18} />
+          Analytics
+        </button>
+      </div>
+
+      <div className="filters-section">
+        <div className="filters-header">
+          <Filter size={18} />
+          <h3>Filters</h3>
         </div>
-      )}
+        <div className="filters-grid">
+          <input
+            type="text"
+            placeholder="Search pair or strategy..."
+            value={filters.search}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, search: e.target.value }))
+            }
+          />
+          <select
+            value={filters.pair}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, pair: e.target.value }))
+            }
+          >
+            <option value="all">All Pairs</option>
+            {Array.from(new Set(trades.map((t) => t.pair))).map((pair) => (
+              <option key={pair} value={pair}>
+                {pair}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.session}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, session: e.target.value }))
+            }
+          >
+            <option value="all">All Sessions</option>
+            <option value="London">London</option>
+            <option value="New York">New York</option>
+            <option value="Asian">Asian</option>
+          </select>
+          <select
+            value={filters.strategy}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, strategy: e.target.value }))
+            }
+          >
+            <option value="all">All Strategies</option>
+            {Array.from(
+              new Set(trades.map((t) => t.strategy).filter(Boolean))
+            ).map((strategy) => (
+              <option key={strategy} value={strategy}>
+                {strategy}
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
+            }
+            placeholder="From date"
+          />
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
+            }
+            placeholder="To date"
+          />
+        </div>
+      </div>
+
+      {activeView === 'table' && renderTableView()}
+      {activeView === 'calendar' && renderCalendarView()}
+      {activeView === 'analytics' && renderAnalyticsView()}
 
       {showModal && (
         <TradeModal
