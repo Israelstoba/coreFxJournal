@@ -9,6 +9,7 @@ import {
   X,
   Edit2,
   Trash2,
+  Check,
 } from 'lucide-react';
 
 // Trade Modal Component
@@ -97,6 +98,8 @@ const TradeModal = ({ onClose, onSave, editData }) => {
                 <option value="GBP/USD">GBP/USD</option>
                 <option value="EUR/USD">EUR/USD</option>
                 <option value="USD/JPY">USD/JPY</option>
+                <option value="XAU/USD">XAU/USD</option>
+                <option value="US30">US30</option>
               </select>
             </div>
 
@@ -191,6 +194,8 @@ const TradeModal = ({ onClose, onSave, editData }) => {
                 <option value="Break & Retest">Break & Retest</option>
                 <option value="Liquidity Grab">Liquidity Grab</option>
                 <option value="Trend Continuation">Trend Continuation</option>
+                <option value="FVG">FVG</option>
+                <option value="Order Block">Order Block</option>
               </select>
             </div>
           </div>
@@ -233,13 +238,19 @@ const TradeModal = ({ onClose, onSave, editData }) => {
 };
 
 // Main Journal Details Component
-const JournalDetails = ({ selectedJournal, onBack }) => {
+const JournalDetails = ({
+  selectedJournal,
+  onBack,
+  onUpdateJournal = () => {},
+}) => {
   const storageKey = `corefx_journal_${selectedJournal.id}_trades`;
 
   const [trades, setTrades] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editTrade, setEditTrade] = useState(null);
   const [activeView, setActiveView] = useState('table');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(selectedJournal?.title || '');
   const [filters, setFilters] = useState({
     search: '',
     pair: 'all',
@@ -289,6 +300,26 @@ const JournalDetails = ({ selectedJournal, onBack }) => {
     if (window.confirm('Delete this trade?')) {
       setTrades((prev) => prev.filter((t) => t.id !== id));
     }
+  };
+
+  // Handle title edit
+  const handleTitleEdit = () => {
+    setIsEditingTitle(true);
+    setEditedTitle(selectedJournal?.title || '');
+  };
+
+  const handleTitleSave = () => {
+    if (editedTitle.trim()) {
+      onUpdateJournal(selectedJournal.id, { title: editedTitle.trim() });
+      setIsEditingTitle(false);
+    } else {
+      alert('Title cannot be empty');
+    }
+  };
+
+  const handleTitleCancel = () => {
+    setIsEditingTitle(false);
+    setEditedTitle(selectedJournal?.title || '');
   };
 
   const calculateRR = (trade) => {
@@ -341,6 +372,16 @@ const JournalDetails = ({ selectedJournal, onBack }) => {
         ).toFixed(2)
       : 0;
 
+  // Calculate current balance
+  const initialBalance =
+    selectedJournal.initialBalance || selectedJournal.accountSize;
+  const totalPnLDollars = trades.reduce((sum, trade) => {
+    const pnlPercent = calculatePnL(trade);
+    const pnlDollars = (initialBalance * pnlPercent) / 100;
+    return sum + pnlDollars;
+  }, 0);
+  const currentBalance = initialBalance + totalPnLDollars;
+
   const renderTableView = () => (
     <div className="trade-table-wrapper glassy-ctr">
       <div className="table-scroll-container">
@@ -357,6 +398,7 @@ const JournalDetails = ({ selectedJournal, onBack }) => {
               <th>R:R</th>
               <th>PnL %</th>
               <th>Strategy</th>
+              <th>Reflection</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -512,7 +554,11 @@ const JournalDetails = ({ selectedJournal, onBack }) => {
         </div>
         {selectedJournal.accountSize && (
           <div className="stat-detail">
-            ${((selectedJournal.accountSize * totalPnL) / 100).toFixed(2)}
+            $
+            {totalPnLDollars.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </div>
         )}
       </div>
@@ -520,6 +566,31 @@ const JournalDetails = ({ selectedJournal, onBack }) => {
       <div className="stat-card avg-rr">
         <h3>Avg R:R</h3>
         <div className="stat-value">{avgRR}</div>
+      </div>
+
+      <div className="stat-card balance-card">
+        <h3>Account Balance</h3>
+        <div className="stat-detail">
+          Initial: ${initialBalance.toLocaleString()}
+        </div>
+        <div className="stat-value current-balance-value">
+          $
+          {currentBalance.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </div>
+        <div
+          className={`stat-detail ${
+            totalPnLDollars >= 0 ? 'profit-text' : 'loss-text'
+          }`}
+        >
+          {totalPnLDollars >= 0 ? '+' : ''}$
+          {totalPnLDollars.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </div>
       </div>
 
       <div className="stat-card performance-by-pair">
@@ -573,7 +644,41 @@ const JournalDetails = ({ selectedJournal, onBack }) => {
           Back
         </button>
 
-        <h2>{selectedJournal?.title || 'Journal'}</h2>
+        {isEditingTitle ? (
+          <div className="title-edit-container">
+            <input
+              type="text"
+              className="title-edit-input"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleTitleSave()}
+              autoFocus
+            />
+            <button
+              className="title-save-btn"
+              onClick={handleTitleSave}
+              title="Save"
+            >
+              <Check size={18} />
+            </button>
+            <button
+              className="title-cancel-btn"
+              onClick={handleTitleCancel}
+              title="Cancel"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        ) : (
+          <h2
+            onClick={handleTitleEdit}
+            className="editable-title"
+            title="Click to edit"
+          >
+            {selectedJournal?.title || 'Journal'}
+            <Edit2 size={16} className="edit-icon" />
+          </h2>
+        )}
 
         <button
           className="add-trade-btn"

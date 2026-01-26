@@ -40,6 +40,51 @@ const Journal = () => {
   }, [journals]);
 
   // ========================
+  // CALCULATE CURRENT BALANCE FROM TRADES
+  // ========================
+  const calculateCurrentBalance = (journalId, initialBalance) => {
+    try {
+      const tradesKey = `corefx_journal_${journalId}_trades`;
+      const savedTrades = localStorage.getItem(tradesKey);
+
+      if (!savedTrades) return initialBalance;
+
+      const trades = JSON.parse(savedTrades);
+
+      // Calculate total P&L in dollars
+      const totalPnLDollars = trades.reduce((sum, trade) => {
+        if (
+          !trade.riskPercent ||
+          !trade.entry ||
+          !trade.sl ||
+          (!trade.tp && !trade.exit)
+        ) {
+          return sum;
+        }
+
+        const entry = parseFloat(trade.entry);
+        const sl = parseFloat(trade.sl);
+        const tpOrExit = trade.exit
+          ? parseFloat(trade.exit)
+          : parseFloat(trade.tp);
+        const isBuy = tpOrExit > entry;
+        const risk = isBuy ? entry - sl : sl - entry;
+        const reward = isBuy ? tpOrExit - entry : entry - tpOrExit;
+        const rr = risk === 0 ? 0 : reward / risk;
+        const pnlPercent = rr * parseFloat(trade.riskPercent);
+        const pnlDollars = (initialBalance * pnlPercent) / 100;
+
+        return sum + pnlDollars;
+      }, 0);
+
+      return initialBalance + totalPnLDollars;
+    } catch (err) {
+      console.error('Error calculating balance:', err);
+      return initialBalance;
+    }
+  };
+
+  // ========================
   // ADD NEW JOURNAL
   // ========================
   const handleAddJournal = (newJournal) => {
@@ -47,6 +92,7 @@ const Journal = () => {
       ...newJournal,
       id: Date.now(),
       dateCreated: new Date().toLocaleDateString(),
+      initialBalance: newJournal.accountSize, // Store initial balance separately
     };
 
     setJournals((prev) => [...prev, journalWithMeta]);
@@ -54,13 +100,25 @@ const Journal = () => {
   };
 
   // ========================
+  // UPDATE JOURNAL (Title, Type, Date)
+  // ========================
+  const handleUpdateJournal = (id, updates) => {
+    setJournals((prev) =>
+      prev.map((j) => (j.id === id ? { ...j, ...updates } : j))
+    );
+  };
+
+  // ========================
   // DELETE JOURNAL + TRADES
   // ========================
   const handleDeleteJournal = (id) => {
-    if (window.confirm('Are you sure you want to delete this journal?')) {
+    if (
+      window.confirm(
+        'Are you sure you want to delete this journal? All trades will be lost.'
+      )
+    ) {
       setJournals((prev) => prev.filter((j) => j.id !== id));
-
-      // remove linked trades
+      // Remove linked trades
       localStorage.removeItem(`corefx_journal_${id}_trades`);
     }
   };
@@ -84,6 +142,7 @@ const Journal = () => {
       <JournalDetails
         selectedJournal={selectedJournal}
         onBack={handleBack}
+        onUpdateJournal={handleUpdateJournal}
         key={selectedJournal.id}
       />
     );
@@ -105,19 +164,27 @@ const Journal = () => {
 
       {journals.length === 0 ? (
         <div className="empty-state">
-          <p>You don’t have any journals yet.</p>
+          <p>You don't have any journals yet.</p>
           <button onClick={() => setShowModal(true)}>Create One</button>
         </div>
       ) : (
         <div className="journal-grid">
-          {journals.map((journal) => (
-            <JournalCard
-              key={journal.id}
-              journal={journal}
-              onOpen={() => handleOpenJournal(journal)}
-              onDelete={() => handleDeleteJournal(journal.id)}
-            />
-          ))}
+          {journals.map((journal) => {
+            const currentBalance = calculateCurrentBalance(
+              journal.id,
+              journal.initialBalance || journal.accountSize
+            );
+
+            return (
+              <JournalCard
+                key={journal.id}
+                journal={{ ...journal, currentBalance }}
+                onOpen={() => handleOpenJournal(journal)}
+                onDelete={() => handleDeleteJournal(journal.id)}
+                onUpdate={(updates) => handleUpdateJournal(journal.id, updates)}
+              />
+            );
+          })}
         </div>
       )}
 
