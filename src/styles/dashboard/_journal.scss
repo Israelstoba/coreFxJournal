@@ -354,7 +354,7 @@
 
 .trade-table-wrapper {
   min-width: 100%;
-  // overflow: hidden;
+  overflow: hidden;
   margin-inline: auto;
 
   margin-top: 1.5rem;
@@ -673,7 +673,7 @@
 // ===============================
 .journal-details {
   min-height: 100vh;
-  padding: 2rem;
+  padding: 1rem;
   color: $text;
   background: $background;
   display: flex;
@@ -690,7 +690,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: 1rem;
     padding: 1rem;
     border-radius: 14px;
@@ -1207,7 +1206,7 @@
 // Screenshot preview in modal
 .screenshot-preview {
   margin-top: 10px;
-  max-width: 100%;
+  max-width: 30%;
   border-radius: 8px;
   border: 1px solid #333;
   display: block;
@@ -1258,6 +1257,9 @@
         background: #43a047;
       }
     }
+  }
+  img {
+    margin-inline: auto;
   }
 }
 

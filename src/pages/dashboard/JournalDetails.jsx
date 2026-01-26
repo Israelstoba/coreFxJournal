@@ -398,7 +398,6 @@ const JournalDetails = ({
               <th>R:R</th>
               <th>PnL %</th>
               <th>Strategy</th>
-              <th>Reflection</th>
               <th>Actions</th>
             </tr>
           </thead>
