@@ -190,7 +190,7 @@
   background: rgba(25, 25, 25, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 0.5rem;
   width: 95%;
   max-width: 420px;
   color: $light;
@@ -357,7 +357,7 @@
   overflow: hidden;
   margin-inline: auto;
 
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
@@ -406,8 +406,8 @@
 
   .empty-table {
     text-align: center;
-    color: #ccc;
-    padding: 2rem;
+    color: red;
+    padding: 0.5rem;
   }
 
   .action-btns {
@@ -856,7 +856,7 @@
 // Filters Section
 .filters-section {
   // margin-bottom: 1.5rem;
-  padding: 1.2rem;
+  padding: 0.5rem;
   border-radius: 12px;
 
   .filters-header {
