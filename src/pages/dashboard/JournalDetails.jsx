@@ -22,7 +22,7 @@ const TradeModal = ({ onClose, onSave, editData }) => {
     tp: '',
     exit: '',
     lotSize: '',
-    riskPercent: '',
+    riskPercent: '0.00',
     session: '',
     strategy: '',
     entryReason: '',
@@ -35,9 +35,47 @@ const TradeModal = ({ onClose, onSave, editData }) => {
     }
   }, [editData]);
 
+  // Auto-calculate risk percent when relevant fields change
+  useEffect(() => {
+    const calculatedRisk = calculateRiskPercent();
+    setForm((prev) => ({ ...prev, riskPercent: calculatedRisk }));
+  }, [form.entry, form.sl, form.lotSize, form.pair]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Auto-calculate risk percent
+  const calculateRiskPercent = () => {
+    const { entry, sl, lotSize, pair } = form;
+
+    if (!entry || !sl || !lotSize) return '0.00';
+
+    const entryPrice = parseFloat(entry);
+    const slPrice = parseFloat(sl);
+    const lots = parseFloat(lotSize);
+
+    if (entryPrice === 0 || lots === 0) return '0.00';
+
+    // Calculate pip difference
+    const pipDifference = Math.abs(entryPrice - slPrice);
+
+    // Determine pip value based on pair
+    let pipValue;
+    if (pair.includes('JPY')) {
+      // For JPY pairs, 1 pip = 0.01
+      pipValue = (pipDifference / 0.01) * 10 * lots; // Standard lot = $10/pip for JPY pairs
+    } else {
+      // For other pairs, 1 pip = 0.0001
+      pipValue = (pipDifference / 0.0001) * 10 * lots; // Standard lot = $10/pip
+    }
+
+    // Assume account size from selectedJournal or default
+    const accountSize = 10000; // You can get this from props if available
+    const riskPercent = (pipValue / accountSize) * 100;
+
+    return riskPercent.toFixed(2);
   };
 
   const handleFileChange = (e) => {
@@ -59,8 +97,7 @@ const TradeModal = ({ onClose, onSave, editData }) => {
       !form.sl ||
       !form.tp ||
       !form.date ||
-      !form.lotSize ||
-      !form.riskPercent
+      !form.lotSize
     ) {
       alert('Please fill all required fields');
       return;
@@ -159,13 +196,23 @@ const TradeModal = ({ onClose, onSave, editData }) => {
             </div>
 
             <div>
-              <label>Risk % *</label>
+              <label>Risk % (Auto-calculated)</label>
               <input
-                type="number"
+                type="text"
                 name="riskPercent"
-                step="0.1"
-                value={form.riskPercent}
-                onChange={handleChange}
+                value={`${form.riskPercent}%`}
+                readOnly
+                disabled
+                style={{
+                  backgroundColor: 'rgba(100, 100, 100, 0.3)',
+                  cursor: 'not-allowed',
+                  color:
+                    parseFloat(form.riskPercent) <= 2
+                      ? '#4caf50'
+                      : parseFloat(form.riskPercent) <= 5
+                      ? '#f59e0b'
+                      : '#ff4d4d',
+                }}
               />
             </div>
 
@@ -310,7 +357,7 @@ const JournalDetails = ({
 
   const handleTitleSave = () => {
     if (editedTitle.trim()) {
-      onUpdateJournal(selectedJournal.id, { title: editedTitle.trim() });
+      onUpdateJournal(selectedJournal?.id, { title: editedTitle.trim() });
       setIsEditingTitle(false);
     } else {
       alert('Title cannot be empty');
@@ -398,13 +445,14 @@ const JournalDetails = ({
               <th>R:R</th>
               <th>PnL %</th>
               <th>Strategy</th>
+              <th>Reflection</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredTrades.length === 0 ? (
               <tr>
-                <td colSpan="11" className="empty-table">
+                <td colSpan="12" className="empty-table">
                   No trades found
                 </td>
               </tr>
@@ -432,7 +480,24 @@ const JournalDetails = ({
                       {pnl > 0 ? '+' : ''}
                       {pnl.toFixed(2)}%
                     </td>
+                    {/* <td>{trade.strategy || '-'}</td>
+                    <td className="action-btns"> */}
+
                     <td>{trade.strategy || '-'}</td>
+                    <td
+                      className="reflection-cell"
+                      title={trade.entryReason || 'No reflection'}
+                    >
+                      {trade.entryReason ? (
+                        <span className="reflection-text">
+                          {trade.entryReason.length > 50
+                            ? `${trade.entryReason.substring(0, 50)}...`
+                            : trade.entryReason}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
                     <td className="action-btns">
                       <button
                         className="edit"
