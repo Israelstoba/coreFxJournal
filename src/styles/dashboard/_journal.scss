@@ -884,7 +884,7 @@
 
     input,
     select {
-      padding: 0.75rem 1rem;
+      padding: 0.5rem;
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       background: rgba(255, 255, 255, 0.5);
@@ -937,7 +937,7 @@
 .calendar-view {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.2rem;
+  gap: 1rem;
 
   .empty-calendar {
     grid-column: 1 / -1;
@@ -951,7 +951,7 @@
 
   .calendar-card {
     @extend .glass-bg;
-    padding: 1.2rem;
+    padding: 0.5rem;
     border-radius: 16px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 
@@ -969,15 +969,15 @@
     }
 
     .calendar-date {
-      margin: 0 0 12px 0;
+      // margin: 0 0 12px 0;
       color: $clr-sec-200;
       font-size: 0.95rem;
       font-weight: 600;
     }
 
     .day-pnl {
-      margin-bottom: 12px;
-      font-size: 1.5rem;
+      // margin-bottom: 12px;
+      font-size: 1rem;
       font-weight: bold;
 
       &.positive {
@@ -1033,6 +1033,31 @@
       .trade-info {
         font-size: 0.8rem;
         color: #555;
+      }
+    }
+  }
+
+  .calendar-trade {
+    .trade-time {
+      font-size: 0.75rem;
+      color: rgba(255, 0, 0, 0.6);
+      font-weight: normal;
+    }
+
+    .trade-reflection {
+      margin-top: 8px;
+      padding-left: 5px;
+      background: rgba(255, 255, 255, 0.05);
+      border-left: 3px solid $clr-prim-300;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      line-height: 1.4;
+      color: rgba(91, 91, 91, 0.8);
+
+      strong {
+        color: $clr-prim-300;
+        font-weight: 600;
+        margin-right: 4px;
       }
     }
   }

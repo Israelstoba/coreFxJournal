@@ -117,8 +117,8 @@ export default function Navbar() {
               role="menu"
             >
               {[
+                { to: '/dashboard', label: 'Dashboard' },
                 { to: '/calculator', label: 'Position Calculator' },
-                { to: '/dashboard', label: 'Trade Journal' },
                 { to: '/cfx-flip', label: 'CoreFx Flip' },
               ].map((item) => (
                 <Link

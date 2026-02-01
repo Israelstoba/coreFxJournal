@@ -74,12 +74,13 @@ function App() {
         {/* 💼 Dashboard Section (No Navbar or Footer) */}
         <Route
           path="/dashboard"
-          element={<Navigate to="/dashboard/overview" replace />}
+          // element={<Navigate to="/dashboard/overview" replace />}
+          element={<Navigate to="/dashboard/journal" replace />}
         />
 
         {/* 🧭 Nested Dashboard Routes */}
         <Route path="/dashboard/*" element={<DashboardLayout />}>
-          <Route path="overview" element={<Overview />} />
+          {/* <Route path="overview" element={<Overview />} /> */}
           <Route path="journal" element={<Journal />} />
           <Route path="playbooks" element={<Playbooks />} />
           <Route path="bots" element={<CfxBot />} />

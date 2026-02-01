@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 
 // Trade Modal Component
-const TradeModal = ({ onClose, onSave, editData }) => {
+const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
   const [form, setForm] = useState({
     date: '',
+    time: '',
     pair: '',
     entry: '',
     sl: '',
@@ -46,11 +47,22 @@ const TradeModal = ({ onClose, onSave, editData }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Auto-calculate risk percent
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prev) => ({ ...prev, screenshot: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Auto-calculate risk percent based on actual account size
   const calculateRiskPercent = () => {
     const { entry, sl, lotSize, pair } = form;
 
-    if (!entry || !sl || !lotSize) return '0.00';
+    if (!entry || !sl || !lotSize || !pair) return '0.00';
 
     const entryPrice = parseFloat(entry);
     const slPrice = parseFloat(sl);
@@ -65,28 +77,26 @@ const TradeModal = ({ onClose, onSave, editData }) => {
     let pipValue;
     if (pair.includes('JPY')) {
       // For JPY pairs, 1 pip = 0.01
-      pipValue = (pipDifference / 0.01) * 10 * lots; // Standard lot = $10/pip for JPY pairs
+      const pips = pipDifference / 0.01;
+      pipValue = pips * 10 * lots; // $10 per pip per standard lot for JPY pairs
+    } else if (pair.includes('XAU') || pair.includes('GOLD')) {
+      // For Gold (XAU/USD), 1 pip = 0.01
+      const pips = pipDifference / 0.01;
+      pipValue = pips * 10 * lots;
+    } else if (pair.includes('US30') || pair.includes('NAS100')) {
+      // For indices, 1 point = 1.00
+      const points = pipDifference / 1;
+      pipValue = points * 10 * lots;
     } else {
-      // For other pairs, 1 pip = 0.0001
-      pipValue = (pipDifference / 0.0001) * 10 * lots; // Standard lot = $10/pip
+      // For standard pairs (EUR/USD, GBP/USD, etc), 1 pip = 0.0001
+      const pips = pipDifference / 0.0001;
+      pipValue = pips * 10 * lots;
     }
 
-    // Assume account size from selectedJournal or default
-    const accountSize = 10000; // You can get this from props if available
+    // Calculate risk as percentage of account
     const riskPercent = (pipValue / accountSize) * 100;
 
     return riskPercent.toFixed(2);
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm((prev) => ({ ...prev, screenshot: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleSubmit = (e) => {
@@ -123,6 +133,16 @@ const TradeModal = ({ onClose, onSave, editData }) => {
                 type="date"
                 name="date"
                 value={form.date}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label>Time</label>
+              <input
+                type="time"
+                name="time"
+                value={form.time}
                 onChange={handleChange}
               />
             </div>
@@ -206,6 +226,7 @@ const TradeModal = ({ onClose, onSave, editData }) => {
                 style={{
                   backgroundColor: 'rgba(100, 100, 100, 0.3)',
                   cursor: 'not-allowed',
+                  fontWeight: 'bold',
                   color:
                     parseFloat(form.riskPercent) <= 2
                       ? '#4caf50'
@@ -213,6 +234,7 @@ const TradeModal = ({ onClose, onSave, editData }) => {
                       ? '#f59e0b'
                       : '#ff4d4d',
                 }}
+                title={`Risk based on account size: $${accountSize.toLocaleString()}`}
               />
             </div>
 
@@ -569,7 +591,12 @@ const JournalDetails = ({
                   {dayTrades.map((trade) => (
                     <div key={trade.id} className="calendar-trade">
                       <div className="trade-header">
-                        <span className="trade-pair">{trade.pair}</span>
+                        <span className="trade-pair">
+                          {trade.pair}{' '}
+                          {trade.time && (
+                            <span className="trade-time">⏲ {trade.time}</span>
+                          )}
+                        </span>
                         <span
                           className={`trade-pnl ${
                             calculatePnL(trade) > 0 ? 'positive' : 'negative'
@@ -583,6 +610,11 @@ const JournalDetails = ({
                         {trade.strategy || 'No strategy'} • R:R{' '}
                         {calculateRR(trade).toFixed(2)}
                       </div>
+                      {trade.entryReason && (
+                        <div className="trade-reflection">
+                          <strong>Reflection:</strong> {trade.entryReason}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -864,6 +896,9 @@ const JournalDetails = ({
           }}
           onSave={handleSaveTrade}
           editData={editTrade}
+          accountSize={
+            selectedJournal.initialBalance || selectedJournal.accountSize
+          }
         />
       )}
     </div>
