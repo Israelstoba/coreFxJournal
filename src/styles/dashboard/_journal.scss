@@ -562,6 +562,46 @@
   }
 }
 
+// TRADE MODAL ERROR HIGHLIGHTING
+// ===============================
+.trade-form {
+  .error-field {
+    border: 2px solid #ff4d4d !important;
+    box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.2) !important;
+    animation: shake 0.3s ease;
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 0.75rem 1rem;
+
+    &::placeholder {
+      color: #999;
+      font-size: 0.9rem;
+    }
+  }
+
+  // Remove extra spacing since labels are gone
+  .form-grid > div,
+  .form-row {
+    margin-bottom: 0;
+  }
+}
+
 /* Form layout */
 .form-grid {
   display: grid;
@@ -973,6 +1013,14 @@
       color: $clr-sec-200;
       font-size: 0.95rem;
       font-weight: 600;
+
+      .calendar-times {
+        font-size: 0.95rem;
+
+        font-weight: 600;
+        color: rgba(255, 0, 0, 0.7);
+        margin-left: 4px;
+      }
     }
 
     .day-pnl {
@@ -1038,11 +1086,11 @@
   }
 
   .calendar-trade {
-    .trade-time {
-      font-size: 0.75rem;
-      color: rgba(255, 0, 0, 0.6);
-      font-weight: normal;
-    }
+    // .trade-time {
+    //   font-size: 0.75rem;
+    //   color: rgba(255, 0, 0, 0.6);
+    //   font-weight: normal;
+    // }
 
     .trade-reflection {
       margin-top: 8px;
@@ -1050,14 +1098,35 @@
       background: rgba(255, 255, 255, 0.05);
       border-left: 3px solid $clr-prim-300;
       border-radius: 4px;
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       line-height: 1.4;
-      color: rgba(91, 91, 91, 0.8);
+      color: $clr-sec-200;
+      color: $text;
 
       strong {
-        color: $clr-prim-300;
-        font-weight: 600;
-        margin-right: 4px;
+        // color: $clr-prim-300;
+        color: red;
+        font-weight: 500;
+        margin-right: 2px;
+      }
+    }
+  }
+
+  .trade-screenshot {
+    margin-top: 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    img {
+      width: 20%;
+      height: auto;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      display: block;
+
+      &:hover {
+        transform: scale(1.02);
       }
     }
   }

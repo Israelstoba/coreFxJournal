@@ -28,6 +28,7 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
     strategy: '',
     entryReason: '',
     screenshot: null,
+    errors: {},
   });
 
   useEffect(() => {
@@ -44,7 +45,11 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const newErrors = { ...prev.errors };
+      delete newErrors[name];
+      return { ...prev, [name]: value, errors: newErrors };
+    });
   };
 
   const handleFileChange = (e) => {
@@ -101,18 +106,25 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (
-      !form.pair ||
-      !form.entry ||
-      !form.sl ||
-      !form.tp ||
-      !form.date ||
-      !form.lotSize
-    ) {
-      alert('Please fill all required fields');
+
+    // Validate required fields
+    const errors = {};
+    if (!form.date) errors.date = true;
+    if (!form.pair) errors.pair = true;
+    if (!form.entry) errors.entry = true;
+    if (!form.sl) errors.sl = true;
+    if (!form.tp) errors.tp = true;
+    if (!form.lotSize) errors.lotSize = true;
+
+    if (Object.keys(errors).length > 0) {
+      setForm((prev) => ({ ...prev, errors }));
+      alert('Please fill all required fields (marked with red outline)');
       return;
     }
-    onSave({ ...form, id: editData?.id || Date.now() });
+
+    // Clear errors and save
+    const { errors: _, ...tradeData } = form;
+    onSave({ ...tradeData, id: editData?.id || Date.now() });
   };
 
   return (
@@ -128,29 +140,34 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
         <form className="trade-form" onSubmit={handleSubmit}>
           <div className="form-grid">
             <div>
-              <label>Date *</label>
               <input
                 type="date"
                 name="date"
                 value={form.date}
                 onChange={handleChange}
+                placeholder="Date *"
+                className={form.errors?.date ? 'error-field' : ''}
               />
             </div>
 
             <div>
-              <label>Time</label>
               <input
                 type="time"
                 name="time"
                 value={form.time}
                 onChange={handleChange}
+                placeholder="Time"
               />
             </div>
 
             <div>
-              <label>Pair *</label>
-              <select name="pair" value={form.pair} onChange={handleChange}>
-                <option value="">Select Pair</option>
+              <select
+                name="pair"
+                value={form.pair}
+                onChange={handleChange}
+                className={form.errors?.pair ? 'error-field' : ''}
+              >
+                <option value="">Select Pair *</option>
                 <option value="GBP/JPY">GBP/JPY</option>
                 <option value="GBP/USD">GBP/USD</option>
                 <option value="EUR/USD">EUR/USD</option>
@@ -161,68 +178,72 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
             </div>
 
             <div>
-              <label>Entry *</label>
               <input
                 type="number"
                 name="entry"
                 step="0.001"
                 value={form.entry}
                 onChange={handleChange}
+                placeholder="Entry Price *"
+                className={form.errors?.entry ? 'error-field' : ''}
               />
             </div>
 
             <div>
-              <label>Stop Loss *</label>
               <input
                 type="number"
                 name="sl"
                 step="0.001"
                 value={form.sl}
                 onChange={handleChange}
+                placeholder="Stop Loss *"
+                className={form.errors?.sl ? 'error-field' : ''}
               />
             </div>
 
             <div>
-              <label>Take Profit *</label>
               <input
                 type="number"
                 name="tp"
                 step="0.001"
                 value={form.tp}
                 onChange={handleChange}
+                placeholder="Take Profit *"
+                className={form.errors?.tp ? 'error-field' : ''}
               />
             </div>
 
             <div>
-              <label>Exit Price</label>
               <input
                 type="number"
                 name="exit"
                 step="0.001"
                 value={form.exit}
                 onChange={handleChange}
+                placeholder="Exit Price (Optional)"
               />
             </div>
 
             <div>
-              <label>Lot Size *</label>
               <input
                 type="number"
                 name="lotSize"
                 step="0.01"
                 value={form.lotSize}
                 onChange={handleChange}
+                placeholder="Lot Size *"
+                className={form.errors?.lotSize ? 'error-field' : ''}
               />
             </div>
 
             <div>
-              <label>Risk % (Auto-calculated)</label>
               <input
                 type="text"
                 name="riskPercent"
                 value={`${form.riskPercent}%`}
                 readOnly
                 disabled
+                placeholder="Risk % (Auto)"
                 style={{
                   backgroundColor: 'rgba(100, 100, 100, 0.3)',
                   cursor: 'not-allowed',
@@ -239,13 +260,12 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
             </div>
 
             <div>
-              <label>Session</label>
               <select
                 name="session"
                 value={form.session}
                 onChange={handleChange}
               >
-                <option value="">Select Session</option>
+                <option value="">Select Session (Optional)</option>
                 <option value="London">London</option>
                 <option value="New York">New York</option>
                 <option value="Asian">Asian</option>
@@ -253,13 +273,12 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
             </div>
 
             <div>
-              <label>Strategy</label>
               <select
                 name="strategy"
                 value={form.strategy}
                 onChange={handleChange}
               >
-                <option value="">Select Strategy</option>
+                <option value="">Select Strategy (Optional)</option>
                 <option value="Break & Retest">Break & Retest</option>
                 <option value="Liquidity Grab">Liquidity Grab</option>
                 <option value="Trend Continuation">Trend Continuation</option>
@@ -270,18 +289,16 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
           </div>
 
           <div className="form-row">
-            <label>Entry Reason / Notes</label>
             <textarea
               name="entryReason"
               value={form.entryReason}
               onChange={handleChange}
               rows={3}
-              placeholder="Describe your trade setup, confluences, and reasoning..."
+              placeholder="Entry reason / Trade reflection..."
             />
           </div>
 
           <div className="form-row">
-            <label>Screenshot / Chart Image</label>
             <input type="file" accept="image/*" onChange={handleFileChange} />
             {form.screenshot && (
               <img
@@ -579,6 +596,15 @@ const JournalDetails = ({
                       month: 'short',
                       day: 'numeric',
                     })}
+                    {dayTrades.some((t) => t.time) && (
+                      <span className="calendar-times">
+                        {' ⏲ '}
+                        {dayTrades
+                          .filter((t) => t.time)
+                          .map((t) => t.time)
+                          .join(', ')}
+                      </span>
+                    )}
                   </h4>
                   <div
                     className={`day-pnl ${
@@ -591,12 +617,7 @@ const JournalDetails = ({
                   {dayTrades.map((trade) => (
                     <div key={trade.id} className="calendar-trade">
                       <div className="trade-header">
-                        <span className="trade-pair">
-                          {trade.pair}{' '}
-                          {trade.time && (
-                            <span className="trade-time">⏲ {trade.time}</span>
-                          )}
-                        </span>
+                        <span className="trade-pair">{trade.pair}</span>
                         <span
                           className={`trade-pnl ${
                             calculatePnL(trade) > 0 ? 'positive' : 'negative'
@@ -607,12 +628,23 @@ const JournalDetails = ({
                         </span>
                       </div>
                       <div className="trade-info">
-                        {trade.strategy || 'No strategy'} • R:R{' '}
+                        {trade.strategy || 'No strategy'} | R:R{' '}
                         {calculateRR(trade).toFixed(2)}
                       </div>
                       {trade.entryReason && (
                         <div className="trade-reflection">
                           <strong>Reflection:</strong> {trade.entryReason}
+                        </div>
+                      )}
+                      {trade.screenshot && (
+                        <div className="trade-screenshot">
+                          <img
+                            src={trade.screenshot}
+                            alt="Trade chart"
+                            onClick={() =>
+                              window.open(trade.screenshot, '_blank')
+                            }
+                          />
                         </div>
                       )}
                     </div>
