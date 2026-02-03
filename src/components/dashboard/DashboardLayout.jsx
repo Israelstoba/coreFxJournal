@@ -8,7 +8,6 @@ import DashboardContent from './DashboardContent';
 import '@/styles/dashboard/dashboard.scss';
 
 // Import dashboard pages
-import Overview from '@/pages/dashboard/Overview';
 import Journal from '@/pages/dashboard/Journal';
 import JournalDetails from '@/pages/dashboard/JournalDetails';
 import Playbooks from '@/pages/dashboard/Playbooks';
@@ -30,7 +29,6 @@ const DashboardLayout = () => {
         <div className="dashboard-content">
           <Routes>
             {/* Dashboard pages */}
-            <Route path="overview" element={<Overview />} />
             <Route path="journal" element={<Journal />} />
             <Route path="journal/:id" element={<JournalDetails />} />
             <Route path="playbooks" element={<Playbooks />} />
@@ -39,7 +37,7 @@ const DashboardLayout = () => {
             <Route path="profile" element={<Profile />} />
 
             {/* Default fallback route */}
-            <Route path="*" element={<Overview />} />
+            <Route path="*" element={<Journal />} />
           </Routes>
         </div>
       </div>

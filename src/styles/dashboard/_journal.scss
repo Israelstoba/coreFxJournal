@@ -532,13 +532,6 @@
 .trade-form {
   width: 100%;
 
-  label {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 0.7rem;
-    color: #ccc;
-  }
-
   input,
   select,
   textarea {
@@ -587,7 +580,7 @@
   input,
   select,
   textarea {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 1rem;
 
     &::placeholder {
       color: #999;
@@ -606,7 +599,7 @@
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 5px;
   margin-bottom: 10px;
 }
 
@@ -615,7 +608,7 @@
 
   textarea {
     resize: none;
-    height: 50px;
+    height: 40px;
   }
 }
 
@@ -1170,24 +1163,32 @@
 // ===============================
 .trade-form {
   .screenshot-preview-container {
+    width: 150px;
+    // height: 100px;
     position: relative;
-    margin-top: 12px;
 
     .screenshot-preview {
+      position: relative;
       width: 100%;
       border-radius: 8px;
       margin-bottom: 10px;
+      // flex-basis: 50%;
     }
 
     .delete-screenshot-btn {
+      position: absolute;
+      top: 0;
+      right: 0.5rem;
       display: flex;
       align-items: center;
       gap: 8px;
-      width: 100%;
-      padding: 10px 16px;
+      // width: 100%;
+      // flex-basis: 50%;
+
+      padding: 0.5rem;
       background: #ff4d4d;
       border: none;
-      border-radius: 8px;
+      border-radius: 50%;
       color: white;
       font-weight: 600;
       cursor: pointer;
@@ -1200,8 +1201,8 @@
       }
 
       svg {
-        width: 16px;
-        height: 16px;
+        width: 12px;
+        height: 12px;
       }
     }
   }

@@ -330,7 +330,7 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
                   title="Remove screenshot"
                 >
                   <Trash2 size={16} />
-                  Delete Image
+                  {/* Delete Image */}
                 </button>
               </div>
             )}

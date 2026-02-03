@@ -1,6 +1,5 @@
 // src/components/dashboard/DashboardContent.jsx
 import React from 'react';
-import Overview from '../../pages/dashboard/Overview';
 import Journal from '../../pages/dashboard/Journal';
 import Playbooks from '../../pages/dashboard/Playbooks';
 import CfxBot from '../../pages/dashboard/CfxBot';
@@ -10,8 +9,6 @@ import Profile from '../../pages/dashboard/Profile';
 
 const DashboardContent = ({ activePage }) => {
   switch (activePage) {
-    case 'overview':
-      return <Overview />;
     case 'journal':
       return <Journal />;
     case 'playbooks':
@@ -23,7 +20,7 @@ const DashboardContent = ({ activePage }) => {
     case 'profile':
       return <Profile />;
     default:
-      return <Overview />;
+      return <Journal />;
   }
 };
 

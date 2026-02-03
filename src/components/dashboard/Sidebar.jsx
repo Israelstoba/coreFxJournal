@@ -41,17 +41,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       {/* Navigation */}
       <nav className="sidebar-nav">
         <ul className="sidebar-list">
-          <Link to="/dashboard/overview">
-            <li
-              className={`sidebar-list-items ${
-                isActive('/dashboard/overview') ? 'active' : ''
-              }`}
-            >
-              <FaHome className="icon" />
-              {isOpen && <span>Overview</span>}
-            </li>
-          </Link>
-
           <Link to="/dashboard/journal">
             <li
               className={`sidebar-list-items ${
