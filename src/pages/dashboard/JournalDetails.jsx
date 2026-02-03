@@ -107,18 +107,23 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate required fields
+    // Validate ALL fields as required
     const errors = {};
     if (!form.date) errors.date = true;
+    if (!form.time) errors.time = true;
     if (!form.pair) errors.pair = true;
     if (!form.entry) errors.entry = true;
     if (!form.sl) errors.sl = true;
     if (!form.tp) errors.tp = true;
+    if (!form.exit) errors.exit = true;
     if (!form.lotSize) errors.lotSize = true;
+    if (!form.session) errors.session = true;
+    if (!form.strategy) errors.strategy = true;
+    if (!form.entryReason) errors.entryReason = true;
 
     if (Object.keys(errors).length > 0) {
       setForm((prev) => ({ ...prev, errors }));
-      alert('Please fill all required fields (marked with red outline)');
+      alert('Please fill ALL fields (marked with red outline)');
       return;
     }
 
@@ -145,7 +150,6 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
                 name="date"
                 value={form.date}
                 onChange={handleChange}
-                placeholder="Date *"
                 className={form.errors?.date ? 'error-field' : ''}
               />
             </div>
@@ -156,7 +160,7 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
                 name="time"
                 value={form.time}
                 onChange={handleChange}
-                placeholder="Time"
+                className={form.errors?.time ? 'error-field' : ''}
               />
             </div>
 
@@ -220,7 +224,8 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
                 step="0.001"
                 value={form.exit}
                 onChange={handleChange}
-                placeholder="Exit Price (Optional)"
+                placeholder="Exit Price *"
+                className={form.errors?.exit ? 'error-field' : ''}
               />
             </div>
 
@@ -264,8 +269,9 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
                 name="session"
                 value={form.session}
                 onChange={handleChange}
+                className={form.errors?.session ? 'error-field' : ''}
               >
-                <option value="">Select Session (Optional)</option>
+                <option value="">Select Session *</option>
                 <option value="London">London</option>
                 <option value="New York">New York</option>
                 <option value="Asian">Asian</option>
@@ -277,8 +283,9 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
                 name="strategy"
                 value={form.strategy}
                 onChange={handleChange}
+                className={form.errors?.strategy ? 'error-field' : ''}
               >
-                <option value="">Select Strategy (Optional)</option>
+                <option value="">Select Strategy *</option>
                 <option value="Break & Retest">Break & Retest</option>
                 <option value="Liquidity Grab">Liquidity Grab</option>
                 <option value="Trend Continuation">Trend Continuation</option>
@@ -294,18 +301,38 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
               value={form.entryReason}
               onChange={handleChange}
               rows={3}
-              placeholder="Entry reason / Trade reflection..."
+              placeholder="Entry Reason / Notes * - Describe your trade setup, confluences, and reasoning..."
+              className={form.errors?.entryReason ? 'error-field' : ''}
             />
           </div>
 
           <div className="form-row">
-            <input type="file" accept="image/*" onChange={handleFileChange} />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              id="screenshot-upload"
+            />
             {form.screenshot && (
-              <img
-                src={form.screenshot}
-                alt="Trade screenshot"
-                className="screenshot-preview"
-              />
+              <div className="screenshot-preview-container">
+                <img
+                  src={form.screenshot}
+                  alt="Trade screenshot"
+                  className="screenshot-preview"
+                />
+                <button
+                  type="button"
+                  className="delete-screenshot-btn"
+                  onClick={() => {
+                    setForm((prev) => ({ ...prev, screenshot: null }));
+                    document.getElementById('screenshot-upload').value = '';
+                  }}
+                  title="Remove screenshot"
+                >
+                  <Trash2 size={16} />
+                  Delete Image
+                </button>
+              </div>
             )}
           </div>
 
@@ -323,6 +350,27 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
   );
 };
 
+// Screenshot Modal Component
+const ScreenshotModal = ({ screenshot, onClose }) => {
+  if (!screenshot) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="screenshot-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="screenshot-modal-header">
+          <h3>Trade Screenshot</h3>
+          <button className="close-btn" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+        <div className="screenshot-modal-content">
+          <img src={screenshot} alt="Trade chart" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main Journal Details Component
 const JournalDetails = ({
   selectedJournal,
@@ -335,8 +383,8 @@ const JournalDetails = ({
   const [showModal, setShowModal] = useState(false);
   const [editTrade, setEditTrade] = useState(null);
   const [activeView, setActiveView] = useState('table');
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(selectedJournal?.title || '');
+  const [showScreenshotModal, setShowScreenshotModal] = useState(false);
+  const [selectedScreenshot, setSelectedScreenshot] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     pair: 'all',
@@ -386,26 +434,6 @@ const JournalDetails = ({
     if (window.confirm('Delete this trade?')) {
       setTrades((prev) => prev.filter((t) => t.id !== id));
     }
-  };
-
-  // Handle title edit
-  const handleTitleEdit = () => {
-    setIsEditingTitle(true);
-    setEditedTitle(selectedJournal?.title || '');
-  };
-
-  const handleTitleSave = () => {
-    if (editedTitle.trim()) {
-      onUpdateJournal(selectedJournal?.id, { title: editedTitle.trim() });
-      setIsEditingTitle(false);
-    } else {
-      alert('Title cannot be empty');
-    }
-  };
-
-  const handleTitleCancel = () => {
-    setIsEditingTitle(false);
-    setEditedTitle(selectedJournal?.title || '');
   };
 
   const calculateRR = (trade) => {
@@ -638,13 +666,16 @@ const JournalDetails = ({
                       )}
                       {trade.screenshot && (
                         <div className="trade-screenshot">
-                          <img
-                            src={trade.screenshot}
-                            alt="Trade chart"
-                            onClick={() =>
-                              window.open(trade.screenshot, '_blank')
-                            }
-                          />
+                          <img src={trade.screenshot} alt="Trade chart" />
+                          <button
+                            className="view-screenshot-btn"
+                            onClick={() => {
+                              setSelectedScreenshot(trade.screenshot);
+                              setShowScreenshotModal(true);
+                            }}
+                          >
+                            View Screenshot
+                          </button>
                         </div>
                       )}
                     </div>
@@ -772,41 +803,7 @@ const JournalDetails = ({
           Back
         </button>
 
-        {isEditingTitle ? (
-          <div className="title-edit-container">
-            <input
-              type="text"
-              className="title-edit-input"
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleTitleSave()}
-              autoFocus
-            />
-            <button
-              className="title-save-btn"
-              onClick={handleTitleSave}
-              title="Save"
-            >
-              <Check size={18} />
-            </button>
-            <button
-              className="title-cancel-btn"
-              onClick={handleTitleCancel}
-              title="Cancel"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        ) : (
-          <h2
-            onClick={handleTitleEdit}
-            className="editable-title"
-            title="Click to edit"
-          >
-            {selectedJournal?.title || 'Journal'}
-            <Edit2 size={16} className="edit-icon" />
-          </h2>
-        )}
+        <h2>{selectedJournal?.title || 'Journal'}</h2>
 
         <button
           className="add-trade-btn"
@@ -931,6 +928,16 @@ const JournalDetails = ({
           accountSize={
             selectedJournal.initialBalance || selectedJournal.accountSize
           }
+        />
+      )}
+
+      {showScreenshotModal && (
+        <ScreenshotModal
+          screenshot={selectedScreenshot}
+          onClose={() => {
+            setShowScreenshotModal(false);
+            setSelectedScreenshot(null);
+          }}
         />
       )}
     </div>

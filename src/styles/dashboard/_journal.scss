@@ -1132,6 +1132,141 @@
   }
 }
 
+// ===============================
+// VIEW SCREENSHOT BUTTON IN CALENDAR
+// ===============================
+.calendar-view {
+  .trade-screenshot {
+    position: relative;
+
+    img {
+      cursor: default;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .view-screenshot-btn {
+      width: 100%;
+      padding: 8px 12px;
+      background: linear-gradient(135deg, #4caf50, #0c3299);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.85rem;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+      }
+    }
+  }
+}
+
+// ===============================
+// DELETE SCREENSHOT BUTTON IN MODAL
+// ===============================
+.trade-form {
+  .screenshot-preview-container {
+    position: relative;
+    margin-top: 12px;
+
+    .screenshot-preview {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .delete-screenshot-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 16px;
+      background: #ff4d4d;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      justify-content: center;
+
+      &:hover {
+        background: darken(#ff4d4d, 8%);
+        transform: scale(1.02);
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+}
+
+// ===============================
+// SCREENSHOT MODAL
+// ===============================
+.screenshot-modal {
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 50, 0.98),
+    rgba(20, 20, 35, 0.98)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .screenshot-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    h3 {
+      color: white;
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: #bbb;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+
+      &:hover {
+        color: white;
+      }
+    }
+  }
+
+  .screenshot-modal-content {
+    padding: 20px;
+    overflow: auto;
+    flex: 1;
+
+    img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+    }
+  }
+}
+
 // Analytics View
 .analytics-view {
   display: grid;
