@@ -1,5 +1,51 @@
 @use '../styles/variables' as *;
 
+// Hero Section Button Styles
+.hero-content {
+  .hero-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid #4caf50;
+    color: #4caf50;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: #4caf50;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .hero-content {
+    .hero-buttons {
+      flex-direction: column;
+      width: 100%;
+
+      .btn,
+      .btn-outline {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+  }
+}
+
 /* Hero Section */
 .landing-section {
   width: 100%;

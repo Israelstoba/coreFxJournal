@@ -11,15 +11,22 @@ import {
   FaSignOutAlt,
 } from 'react-icons/fa';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import logo from '@/assets/cfx_logo.png';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
-  const location = useLocation(); // 👈 detect current route
+  const location = useLocation();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    alert('You have been logged out!');
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Error logging out. Please try again.');
+    }
   };
 
   // Helper to check if a link is active

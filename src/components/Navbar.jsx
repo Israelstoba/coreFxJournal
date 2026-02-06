@@ -1,6 +1,7 @@
 // src/components/Navbar.jsx
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/_navbar.scss';
 import logo from '../assets/cfx_logo.png';
 
@@ -11,6 +12,7 @@ export default function Navbar() {
   const menuRef = useRef(null);
   const toggleRef = useRef(null);
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   // Close menu on Escape
   useEffect(() => {
@@ -53,6 +55,15 @@ export default function Navbar() {
     setProductOpen(false);
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      handleLinkClick();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   // Detect scroll for sticky effect
   useEffect(() => {
     const handleScroll = () => {
@@ -64,6 +75,9 @@ export default function Navbar() {
 
   // Hide About & Contact only on /calculator route
   const hideExtraLinks = location.pathname === '/calculator';
+
+  // Get first name from user
+  const firstName = user?.name?.split(' ')[0] || 'User';
 
   return (
     <>
@@ -146,6 +160,45 @@ export default function Navbar() {
                 </a>
               </li>
             </>
+          )}
+
+          {/* User Section */}
+          {user ? (
+            <>
+              {/* Welcome Message - Desktop Only */}
+              <li className="list-items user-welcome">
+                <span className="navbar__welcome">Hey, {firstName}</span>
+              </li>
+
+              {/* Dashboard Button */}
+              <li className="list-items auth-btn-item">
+                <Link
+                  to="/dashboard"
+                  className="navbar__auth-btn"
+                  onClick={handleLinkClick}
+                >
+                  Dashboard
+                </Link>
+              </li>
+
+              {/* Logout - Mobile Only */}
+              <li className="list-items logout-mobile">
+                <button onClick={handleLogout} className="links logout-link">
+                  Logout
+                </button>
+              </li>
+            </>
+          ) : (
+            /* Sign In / Sign Up Button */
+            <li className="list-items auth-btn-item">
+              <Link
+                to="/auth"
+                className="navbar__auth-btn"
+                onClick={handleLinkClick}
+              >
+                Sign In / Sign Up
+              </Link>
+            </li>
           )}
         </ul>
       </nav>

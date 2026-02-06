@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './_landing.scss';
-import monitorImg from '../assets/monitor.jpg'; // Import image from assets
+import monitorImg from '../assets/monitor.jpg';
 
 const Landing = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showTelegram, setShowTelegram] = useState(false); // 👈 New state for Telegram btn
+  const [showTelegram, setShowTelegram] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -13,7 +13,6 @@ const Landing = () => {
     };
     window.addEventListener('scroll', handleScroll);
 
-    // Show Telegram btn 10 seconds after page load
     const telegramTimer = setTimeout(() => {
       setShowTelegram(true);
     }, 5000);
@@ -40,9 +39,11 @@ const Landing = () => {
             professionals.
           </p>
 
-          <Link className="btn btn-prim" to="/calculator">
-            Get Started
-          </Link>
+          <div className="hero-buttons">
+            <Link className="btn btn-prim" to="/auth">
+              Get Started
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -66,7 +67,7 @@ const Landing = () => {
             <p>
               What sets us apart is experience — our instructors are active
               traders who bring real-world insights into every lesson, ensuring
-              you gain practical strategies that work in today’s markets.
+              you gain practical strategies that work in today's markets.
             </p>
 
             <div className="about-icons">
@@ -151,7 +152,7 @@ const Landing = () => {
                   <span className="bullet"> ✔ </span> Weekly Q&A sessions
                 </li>
               </ul>
-              <Link className="btn btn-prim" to="/signup">
+              <Link className="btn btn-prim" to="/auth">
                 Enroll Now
               </Link>
             </div>
@@ -181,7 +182,7 @@ const Landing = () => {
                   <span className="bullet"> ✔ </span> Trade reviews & feedback
                 </li>
               </ul>
-              <Link className="btn btn-prim" to="/signup">
+              <Link className="btn btn-prim" to="/auth">
                 Enroll Now
               </Link>
             </div>
@@ -215,7 +216,7 @@ const Landing = () => {
                   <span className="bullet"> ✔ </span> Exclusive community
                 </li>
               </ul>
-              <Link className="btn btn-prim" to="/signup">
+              <Link className="btn btn-prim" to="/auth">
                 Enroll Now
               </Link>
             </div>
@@ -230,7 +231,7 @@ const Landing = () => {
           Join our community of awesome traders and take the first step towards
           financial independence.
         </p>
-        <Link className="btn btn-sec" to="/journal">
+        <Link className="btn btn-sec" to="/auth">
           Join Now
         </Link>
       </section>
@@ -245,7 +246,7 @@ const Landing = () => {
 
       {/* Telegram Floating Button */}
       <a
-        href="https://t.me/corefxtradingacademy" // 🔗 replace with your Telegram
+        href="https://t.me/corefxtradingacademy"
         target="_blank"
         rel="noopener noreferrer"
         className={`telegram-btn ${showTelegram ? 'show' : ''}`}

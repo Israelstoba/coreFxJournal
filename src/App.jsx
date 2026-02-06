@@ -10,6 +10,8 @@ import Landing from './pages/Landing';
 import Calculator from './components/Calculator';
 import Footer from './components/Footer';
 import CfxFlip from './components/CfxFlip';
+import AuthPage from './pages/AuthPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // ✅ Dashboard imports
 import DashboardLayout from './components/dashboard/DashboardLayout';
@@ -70,14 +72,24 @@ function App() {
           }
         />
 
-        {/* 💼 Dashboard Section (No Navbar or Footer) */}
+        {/* 🔐 Auth Page (No Navbar or Footer) */}
+        <Route path="/auth" element={<AuthPage />} />
+
+        {/* 💼 Dashboard Section (Protected - No Navbar or Footer) */}
         <Route
           path="/dashboard"
           element={<Navigate to="/dashboard/journal" replace />}
         />
 
-        {/* 🧭 Nested Dashboard Routes */}
-        <Route path="/dashboard/*" element={<DashboardLayout />}>
+        {/* 🧭 Nested Dashboard Routes - PROTECTED */}
+        <Route
+          path="/dashboard/*"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="journal" element={<Journal />} />
           <Route path="playbooks" element={<Playbooks />} />
           <Route path="bots" element={<CfxBot />} />
