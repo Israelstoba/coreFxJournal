@@ -556,9 +556,8 @@ const JournalDetails = ({
   onUpdateJournal = () => {},
 }) => {
   const { user } = useAuth();
-  const storageKey = `corefx_journal_${selectedJournal.id}_trades`;
 
-  const [trades, setTrades] = useState([]);
+  const [trades, setTrades] = useState(selectedJournal.trades || []);
   const [showModal, setShowModal] = useState(false);
   const [editTrade, setEditTrade] = useState(null);
   const [activeView, setActiveView] = useState('table');
@@ -601,27 +600,20 @@ const JournalDetails = ({
     loadUserStrategies();
   }, [user]);
 
-  // Load trades from localStorage on mount
+  // Sync trades to Appwrite whenever they change
   useEffect(() => {
-    try {
-      const savedTrades = localStorage.getItem(storageKey);
-      if (savedTrades) {
-        const parsed = JSON.parse(savedTrades);
-        setTrades(parsed);
-      }
-    } catch (error) {
-      console.error('Error loading trades:', error);
-    }
-  }, [storageKey]);
+    const syncTrades = async () => {
+      if (trades.length === 0 && selectedJournal.trades?.length === 0) return;
 
-  // Save trades to localStorage whenever they change
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(trades));
-    } catch (error) {
-      console.error('Error saving trades:', error);
-    }
-  }, [trades, storageKey]);
+      try {
+        await onUpdateJournal(selectedJournal.id, { trades });
+      } catch (error) {
+        console.error('Error syncing trades:', error);
+      }
+    };
+
+    syncTrades();
+  }, [trades]);
 
   const handleSaveTrade = (trade) => {
     if (editTrade) {
