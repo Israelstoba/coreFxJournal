@@ -15,8 +15,10 @@ const AuthPage = () => {
   });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
 
-  const { login, register } = useAuth();
+  const { login, register, sendPasswordRecovery } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -87,11 +89,43 @@ const AuthPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+
+    if (!forgotEmail.trim()) {
+      setServerError('Please enter your email address');
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(forgotEmail)) {
+      setServerError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    setServerError('');
+
+    try {
+      await sendPasswordRecovery(forgotEmail);
+      setServerError(''); // Clear any errors
+      alert('Password reset email sent! Check your inbox.');
+      setShowForgotPassword(false);
+      setForgotEmail('');
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      setServerError(error.message || 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setErrors({});
     setServerError('');
     setFormData({ name: '', email: '', password: '' });
+    setShowForgotPassword(false);
+    setForgotEmail('');
   };
 
   return (
@@ -115,108 +149,165 @@ const AuthPage = () => {
             <div className="auth-server-error">{serverError}</div>
           )}
 
-          {/* Name field (only for registration) */}
-          {!isLogin && (
-            <div className="auth-field">
-              <div className="auth-input-wrapper">
-                <User
-                  size={20}
-                  className={`auth-icon ${errors.name ? 'error' : ''}`}
-                />
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Full Name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                  className={errors.name ? 'error' : ''}
-                />
+          {/* Forgot Password Form */}
+          {showForgotPassword ? (
+            <>
+              <div className="auth-field">
+                <div className="auth-input-wrapper">
+                  <Mail size={20} className="auth-icon" />
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    onKeyPress={(e) =>
+                      e.key === 'Enter' && handleForgotPassword(e)
+                    }
+                  />
+                </div>
               </div>
-              {errors.name && <p className="auth-error">{errors.name}</p>}
-            </div>
-          )}
-
-          {/* Email field */}
-          <div className="auth-field">
-            <div className="auth-input-wrapper">
-              <Mail
-                size={20}
-                className={`auth-icon ${errors.email ? 'error' : ''}`}
-              />
-              <input
-                type="email"
-                name="email"
-                placeholder="Email Address"
-                value={formData.email}
-                onChange={handleChange}
-                onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                className={errors.email ? 'error' : ''}
-              />
-            </div>
-            {errors.email && <p className="auth-error">{errors.email}</p>}
-          </div>
-
-          {/* Password field */}
-          <div className="auth-field password-field">
-            <div className="auth-input-wrapper">
-              <Lock
-                size={20}
-                className={`auth-icon ${errors.password ? 'error' : ''}`}
-              />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                className={`has-toggle ${errors.password ? 'error' : ''}`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="toggle-password-btn"
+              <div
+                style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                <button
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                  className="btn-forgot-submit"
+                  style={{ flex: 1 }}
+                >
+                  {loading ? 'Sending...' : 'Send Reset Link'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotEmail('');
+                    setServerError('');
+                  }}
+                  className="btn-forgot-cancel"
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Name field (only for registration) */}
+              {!isLogin && (
+                <div className="auth-field">
+                  <div className="auth-input-wrapper">
+                    <User
+                      size={20}
+                      className={`auth-icon ${errors.name ? 'error' : ''}`}
+                    />
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Full Name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                      className={errors.name ? 'error' : ''}
+                    />
+                  </div>
+                  {errors.name && <p className="auth-error">{errors.name}</p>}
+                </div>
+              )}
+
+              {/* Email field */}
+              <div className="auth-field">
+                <div className="auth-input-wrapper">
+                  <Mail
+                    size={20}
+                    className={`auth-icon ${errors.email ? 'error' : ''}`}
+                  />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email Address"
+                    value={formData.email}
+                    onChange={handleChange}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                    className={errors.email ? 'error' : ''}
+                  />
+                </div>
+                {errors.email && <p className="auth-error">{errors.email}</p>}
+              </div>
+
+              {/* Password field */}
+              <div className="auth-field password-field">
+                <div className="auth-input-wrapper">
+                  <Lock
+                    size={20}
+                    className={`auth-icon ${errors.password ? 'error' : ''}`}
+                  />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                    className={`has-toggle ${errors.password ? 'error' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="toggle-password-btn"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="auth-error">{errors.password}</p>
+                )}
+              </div>
+
+              {/* Forgot Password (only for login) */}
+              {isLogin && (
+                <div className="auth-forgot">
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowForgotPassword(true);
+                    }}
+                  >
+                    Forgot Password?
+                  </a>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="auth-submit"
+              >
+                {loading
+                  ? 'Processing...'
+                  : isLogin
+                  ? 'Sign In'
+                  : 'Create Account'}
               </button>
-            </div>
-            {errors.password && <p className="auth-error">{errors.password}</p>}
-          </div>
 
-          {/* Forgot Password (only for login) */}
-          {isLogin && (
-            <div className="auth-forgot">
-              <a href="#" onClick={(e) => e.preventDefault()}>
-                Forgot Password?
-              </a>
-            </div>
+              {/* Toggle Login/Register */}
+              <div className="auth-toggle">
+                <span className="auth-toggle-text">
+                  {isLogin
+                    ? "Don't have an account? "
+                    : 'Already have an account? '}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  className="auth-toggle-btn"
+                >
+                  {isLogin ? 'Sign Up' : 'Sign In'}
+                </button>
+              </div>
+            </>
           )}
-
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="auth-submit"
-          >
-            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
-          </button>
-
-          {/* Toggle Login/Register */}
-          <div className="auth-toggle">
-            <span className="auth-toggle-text">
-              {isLogin
-                ? "Don't have an account? "
-                : 'Already have an account? '}
-            </span>
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="auth-toggle-btn"
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </div>
         </div>
 
         {/* Footer */}

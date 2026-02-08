@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   PlusCircle,
@@ -10,10 +10,167 @@ import {
   Edit2,
   Trash2,
   Check,
+  Search,
+  ChevronDown,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { databases } from '../../lib/appwrite';
+import { Query } from 'appwrite';
+
+// Searchable Select Component
+const SearchableSelect = ({ value, onChange, options, placeholder, error }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter options based on search
+  const filteredOptions = options
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        item.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const handleSelect = (item) => {
+    onChange({ target: { name: 'pair', value: item } });
+    setIsOpen(false);
+    setSearchTerm('');
+  };
+
+  const selectedLabel = value || placeholder;
+
+  return (
+    <div className="searchable-select" ref={dropdownRef}>
+      <div
+        className={`select-trigger ${error ? 'error-field' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className={value ? '' : 'placeholder'}>{selectedLabel}</span>
+        <ChevronDown size={16} className={`chevron ${isOpen ? 'open' : ''}`} />
+      </div>
+
+      {isOpen && (
+        <div className="select-dropdown">
+          <div className="search-box">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search pairs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+            />
+          </div>
+
+          <div className="options-list">
+            {filteredOptions.length === 0 ? (
+              <div className="no-results">No pairs found</div>
+            ) : (
+              filteredOptions.map((group) => (
+                <div key={group.label} className="option-group">
+                  <div className="group-label">{group.label}</div>
+                  {group.items.map((item) => (
+                    <div
+                      key={item}
+                      className={`option-item ${
+                        value === item ? 'selected' : ''
+                      }`}
+                      onClick={() => handleSelect(item)}
+                    >
+                      {item}
+                      {value === item && <Check size={16} />}
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Trade Modal Component
-const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
+const TradeModal = ({
+  onClose,
+  onSave,
+  editData,
+  accountSize = 10000,
+  userStrategies = [],
+}) => {
+  // Trading pairs organized by category
+  const tradingPairs = [
+    {
+      label: 'Forex Majors',
+      items: [
+        'EUR/USD',
+        'GBP/USD',
+        'USD/JPY',
+        'USD/CHF',
+        'AUD/USD',
+        'USD/CAD',
+        'NZD/USD',
+      ],
+    },
+    {
+      label: 'Forex Minors',
+      items: [
+        'EUR/GBP',
+        'EUR/JPY',
+        'EUR/CHF',
+        'EUR/AUD',
+        'EUR/CAD',
+        'EUR/NZD',
+        'GBP/JPY',
+        'GBP/CHF',
+        'GBP/AUD',
+        'GBP/CAD',
+        'GBP/NZD',
+        'AUD/JPY',
+        'AUD/CAD',
+        'AUD/NZD',
+        'CAD/JPY',
+        'CHF/JPY',
+        'NZD/JPY',
+        'NZD/CAD',
+      ],
+    },
+    {
+      label: 'Metals',
+      items: ['XAU/USD', 'XAG/USD', 'XPT/USD', 'XPD/USD'],
+    },
+    {
+      label: 'Indices',
+      items: [
+        'US30',
+        'US100',
+        'US500',
+        'UK100',
+        'GER40',
+        'FRA40',
+        'JPN225',
+        'AUS200',
+        'HK50',
+      ],
+    },
+  ];
+
   const [form, setForm] = useState({
     date: '',
     time: '',
@@ -165,20 +322,13 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
             </div>
 
             <div>
-              <select
-                name="pair"
+              <SearchableSelect
                 value={form.pair}
                 onChange={handleChange}
-                className={form.errors?.pair ? 'error-field' : ''}
-              >
-                <option value="">Select Pair *</option>
-                <option value="GBP/JPY">GBP/JPY</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="XAU/USD">XAU/USD</option>
-                <option value="US30">US30</option>
-              </select>
+                options={tradingPairs}
+                placeholder="Select Pair *"
+                error={form.errors?.pair}
+              />
             </div>
 
             <div>
@@ -286,11 +436,39 @@ const TradeModal = ({ onClose, onSave, editData, accountSize = 10000 }) => {
                 className={form.errors?.strategy ? 'error-field' : ''}
               >
                 <option value="">Select Strategy *</option>
-                <option value="Break & Retest">Break & Retest</option>
-                <option value="Liquidity Grab">Liquidity Grab</option>
-                <option value="Trend Continuation">Trend Continuation</option>
-                <option value="FVG">FVG</option>
-                <option value="Order Block">Order Block</option>
+                {/* User's custom strategies */}
+                {userStrategies.length > 0 && (
+                  <>
+                    <optgroup label="My Strategies">
+                      {userStrategies.map((strategy, index) => (
+                        <option key={`user-${index}`} value={strategy}>
+                          {strategy}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Default Strategies">
+                      <option value="Break & Retest">Break & Retest</option>
+                      <option value="Liquidity Grab">Liquidity Grab</option>
+                      <option value="Trend Continuation">
+                        Trend Continuation
+                      </option>
+                      <option value="FVG">FVG</option>
+                      <option value="Order Block">Order Block</option>
+                    </optgroup>
+                  </>
+                )}
+                {/* Show defaults only if no custom strategies */}
+                {userStrategies.length === 0 && (
+                  <>
+                    <option value="Break & Retest">Break & Retest</option>
+                    <option value="Liquidity Grab">Liquidity Grab</option>
+                    <option value="Trend Continuation">
+                      Trend Continuation
+                    </option>
+                    <option value="FVG">FVG</option>
+                    <option value="Order Block">Order Block</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -377,6 +555,7 @@ const JournalDetails = ({
   onBack,
   onUpdateJournal = () => {},
 }) => {
+  const { user } = useAuth();
   const storageKey = `corefx_journal_${selectedJournal.id}_trades`;
 
   const [trades, setTrades] = useState([]);
@@ -385,6 +564,7 @@ const JournalDetails = ({
   const [activeView, setActiveView] = useState('table');
   const [showScreenshotModal, setShowScreenshotModal] = useState(false);
   const [selectedScreenshot, setSelectedScreenshot] = useState(null);
+  const [userStrategies, setUserStrategies] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
     pair: 'all',
@@ -393,6 +573,33 @@ const JournalDetails = ({
     dateFrom: '',
     dateTo: '',
   });
+
+  // Load user strategies from Appwrite
+  useEffect(() => {
+    const loadUserStrategies = async () => {
+      if (!user) return;
+
+      try {
+        const TABLE_ID = import.meta.env.VITE_APPWRITE_SETTINGS_TABLE_ID;
+        const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+
+        if (!TABLE_ID || !DATABASE_ID) return;
+
+        const response = await databases.listDocuments(DATABASE_ID, TABLE_ID, [
+          Query.equal('userId', user.$id),
+        ]);
+
+        if (response.documents.length > 0) {
+          const strategies = response.documents[0].strategies || [];
+          setUserStrategies(strategies);
+        }
+      } catch (error) {
+        console.error('Error loading strategies:', error);
+      }
+    };
+
+    loadUserStrategies();
+  }, [user]);
 
   // Load trades from localStorage on mount
   useEffect(() => {
@@ -928,6 +1135,7 @@ const JournalDetails = ({
           accountSize={
             selectedJournal.initialBalance || selectedJournal.accountSize
           }
+          userStrategies={userStrategies}
         />
       )}
 

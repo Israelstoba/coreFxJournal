@@ -7,10 +7,14 @@ import { FaUser, FaCog, FaPlus, FaTimes, FaSave } from 'react-icons/fa';
 import '../../styles/dashboard/_settings.scss';
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, updatePassword } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Get Table ID from environment
+  const TABLE_ID = import.meta.env.VITE_APPWRITE_SETTINGS_TABLE_ID;
+  const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 
   // Profile State
   const [profileData, setProfileData] = useState({
@@ -30,39 +34,79 @@ const Settings = () => {
 
   // Load user settings on mount
   useEffect(() => {
-    loadUserSettings();
-  }, []);
+    let isMounted = true;
+
+    const initSettings = async () => {
+      if (user && isMounted) {
+        await loadUserSettings();
+      }
+    };
+
+    initSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.$id]);
 
   const loadUserSettings = async () => {
+    if (!DATABASE_ID || !TABLE_ID) {
+      showMessage('error', 'Database configuration missing');
+      console.error('Missing environment variables:', {
+        DATABASE_ID,
+        TABLE_ID,
+      });
+      return;
+    }
+
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        import.meta.env.VITE_APPWRITE_SETTINGS_COLLECTION_ID,
-        [Query.equal('userId', user.$id)]
-      );
+      const response = await databases.listDocuments(DATABASE_ID, TABLE_ID, [
+        Query.equal('userId', user.$id),
+      ]);
 
       if (response.documents.length > 0) {
+        // Use the first document
         const userSettings = response.documents[0];
         setStrategies(userSettings.strategies || []);
         setSettingsDocId(userSettings.$id);
+
+        // Clean up duplicates if they exist
+        if (response.documents.length > 1) {
+          console.log(
+            `Found ${response.documents.length} duplicate settings documents. Cleaning up...`
+          );
+
+          // Delete all duplicates except the first one
+          for (let i = 1; i < response.documents.length; i++) {
+            try {
+              await databases.deleteDocument(
+                DATABASE_ID,
+                TABLE_ID,
+                response.documents[i].$id
+              );
+              console.log(`Deleted duplicate: ${response.documents[i].$id}`);
+            } catch (error) {
+              console.error(`Error deleting duplicate: ${error}`);
+            }
+          }
+        }
       } else {
-        // Create initial settings document
+        // Create initial settings document only if none exists
         const newSettings = await databases.createDocument(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
-          import.meta.env.VITE_APPWRITE_SETTINGS_COLLECTION_ID,
+          DATABASE_ID,
+          TABLE_ID,
           ID.unique(),
           {
             userId: user.$id,
             strategies: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
           }
         );
         setSettingsDocId(newSettings.$id);
+        showMessage('success', 'Settings initialized');
       }
     } catch (error) {
       console.error('Error loading settings:', error);
-      showMessage('error', 'Failed to load settings');
+      showMessage('error', `Failed to load settings: ${error.message}`);
     }
   };
 
@@ -77,9 +121,6 @@ const Settings = () => {
     setLoading(true);
 
     try {
-      // Note: Appwrite doesn't allow updating email/name through account.updateName
-      // You'd need to use account.updateName() for name changes
-      // Email changes require verification
       showMessage(
         'info',
         'Profile updates coming soon - contact support to change email'
@@ -94,6 +135,17 @@ const Settings = () => {
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
 
+    // Validation
+    if (!passwordData.currentPassword) {
+      showMessage('error', 'Current password is required');
+      return;
+    }
+
+    if (!passwordData.newPassword) {
+      showMessage('error', 'New password is required');
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       showMessage('error', 'New passwords do not match');
       return;
@@ -107,16 +159,23 @@ const Settings = () => {
     setLoading(true);
 
     try {
-      // Note: Appwrite requires old password to update
-      // Use account.updatePassword(newPassword, oldPassword)
-      showMessage('info', 'Password update feature coming soon');
+      await updatePassword(
+        passwordData.newPassword,
+        passwordData.currentPassword
+      );
+      showMessage('success', 'Password updated successfully!');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
     } catch (error) {
-      showMessage('error', error.message);
+      console.error('Password update error:', error);
+      if (error.code === 401) {
+        showMessage('error', 'Current password is incorrect');
+      } else {
+        showMessage('error', error.message || 'Failed to update password');
+      }
     } finally {
       setLoading(false);
     }
@@ -134,55 +193,69 @@ const Settings = () => {
       return;
     }
 
+    if (!settingsDocId) {
+      showMessage(
+        'error',
+        'Settings not initialized. Please refresh the page.'
+      );
+      return;
+    }
+
     const updatedStrategies = [...strategies, newStrategy.trim()];
     setLoading(true);
 
     try {
-      await databases.updateDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        import.meta.env.VITE_APPWRITE_SETTINGS_COLLECTION_ID,
-        settingsDocId,
-        {
-          strategies: updatedStrategies,
-          updatedAt: new Date().toISOString(),
-        }
-      );
+      await databases.updateDocument(DATABASE_ID, TABLE_ID, settingsDocId, {
+        strategies: updatedStrategies,
+      });
 
       setStrategies(updatedStrategies);
       setNewStrategy('');
       showMessage('success', 'Strategy added successfully');
     } catch (error) {
       console.error('Error adding strategy:', error);
-      showMessage('error', 'Failed to add strategy');
+      showMessage('error', `Failed to add strategy: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemoveStrategy = async (strategyToRemove) => {
+    if (!settingsDocId) {
+      showMessage(
+        'error',
+        'Settings not initialized. Please refresh the page.'
+      );
+      return;
+    }
+
     const updatedStrategies = strategies.filter((s) => s !== strategyToRemove);
     setLoading(true);
 
     try {
-      await databases.updateDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        import.meta.env.VITE_APPWRITE_SETTINGS_COLLECTION_ID,
-        settingsDocId,
-        {
-          strategies: updatedStrategies,
-          updatedAt: new Date().toISOString(),
-        }
-      );
+      await databases.updateDocument(DATABASE_ID, TABLE_ID, settingsDocId, {
+        strategies: updatedStrategies,
+      });
 
       setStrategies(updatedStrategies);
       showMessage('success', 'Strategy removed successfully');
     } catch (error) {
       console.error('Error removing strategy:', error);
-      showMessage('error', 'Failed to remove strategy');
+      showMessage('error', `Failed to remove strategy: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="settings-page">
+        <div className="settings-container">
+          <p>Loading user data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-page">

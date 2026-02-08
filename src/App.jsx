@@ -12,6 +12,7 @@ import Footer from './components/Footer';
 import CfxFlip from './components/CfxFlip';
 import AuthPage from './pages/AuthPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import ResetPassword from './pages/ResetPassword';
 
 // ✅ Dashboard imports
 import DashboardLayout from './components/dashboard/DashboardLayout';
@@ -71,6 +72,8 @@ function App() {
             </>
           }
         />
+
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* 🔐 Auth Page (No Navbar or Footer) */}
         <Route path="/auth" element={<AuthPage />} />

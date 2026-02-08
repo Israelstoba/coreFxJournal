@@ -91,12 +91,60 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update password (when user is logged in)
+  const updatePassword = async (newPassword, oldPassword) => {
+    try {
+      await account.updatePassword(newPassword, oldPassword);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Send password recovery email
+  const sendPasswordRecovery = async (email) => {
+    try {
+      // The URL should point to your password reset page
+      const resetUrl = `${window.location.origin}/reset-password`;
+      await account.createRecovery(email, resetUrl);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Complete password recovery
+  const completePasswordRecovery = async (userId, secret, newPassword) => {
+    try {
+      await account.updateRecovery(userId, secret, newPassword);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Update user name
+  const updateUserName = async (name) => {
+    try {
+      await account.updateName(name);
+      const updatedUser = await account.get();
+      setUser(updatedUser);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
     register,
     login,
     logout,
+    updatePassword,
+    sendPasswordRecovery,
+    completePasswordRecovery,
+    updateUserName,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
