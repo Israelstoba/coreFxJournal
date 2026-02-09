@@ -203,11 +203,15 @@ export default function Navbar() {
         </ul>
       </nav>
 
-      {/* Overlay */}
+      {/* Overlay – mobile/tablet only */}
       {menuOpen && (
         <div
           className="navbar__overlay"
           onClick={() => {
+            // ❌ Do NOTHING on desktop
+            if (window.innerWidth >= 769) return;
+
+            // ✅ Close only on mobile/tablet
             setMenuOpen(false);
             setProductOpen(false);
           }}
