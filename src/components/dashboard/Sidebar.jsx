@@ -31,7 +31,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   };
 
   // Close sidebar when clicking outside (mobile/tablet only)
-  // Close sidebar when clicking outside (mobile/tablet only)
   useEffect(() => {
     const handleClickOutside = (event) => {
       // ❌ Do nothing on desktop

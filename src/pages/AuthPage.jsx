@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, User, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import corefxLogo from '../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 import './_authPage.scss';
 
@@ -134,7 +135,8 @@ const AuthPage = () => {
         {/* Header */}
         <div className="auth-header">
           <div className="auth-logo">
-            <TrendingUp size={36} color="white" />
+            {/* <TrendingUp size={36} color="white" /> */}
+            <img src={corefxLogo} alt="CoreFx" className="calculator-logo" />
           </div>
           <h1>CoreFX</h1>
           <p>

@@ -196,7 +196,7 @@ export default function Navbar() {
                 className="navbar__auth-btn"
                 onClick={handleLinkClick}
               >
-                Sign In / Sign Up
+                Sign In
               </Link>
             </li>
           )}
