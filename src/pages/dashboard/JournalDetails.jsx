@@ -220,6 +220,50 @@ const TradeModal = ({
     }
   };
 
+  // Pip size: price movement that equals 1 pip for the instrument
+  const getPipSize = (pair) => {
+    if (pair.includes('JPY')) return 0.01;
+    if (pair.includes('XAU') || pair.includes('GOLD')) return 0.1;
+    if (pair.includes('XAG')) return 0.001;
+    if (
+      [
+        'US30',
+        'US100',
+        'US500',
+        'UK100',
+        'GER40',
+        'FRA40',
+        'JPN225',
+        'AUS200',
+        'HK50',
+      ].includes(pair)
+    )
+      return 1;
+    return 0.0001;
+  };
+
+  // Pip value: dollar value of 1 pip per standard lot
+  const getPipValue = (pair) => {
+    if (pair.includes('JPY')) return 1000 / 150; // ~6.67, approximated; matches calculator
+    if (pair.includes('XAU') || pair.includes('GOLD')) return 1;
+    if (pair.includes('XAG')) return 0.1;
+    if (
+      [
+        'US30',
+        'US100',
+        'US500',
+        'UK100',
+        'GER40',
+        'FRA40',
+        'JPN225',
+        'AUS200',
+        'HK50',
+      ].includes(pair)
+    )
+      return 1;
+    return 10;
+  };
+
   // Auto-calculate risk percent based on actual account size
   const calculateRiskPercent = () => {
     const { entry, sl, lotSize, pair } = form;
@@ -232,31 +276,11 @@ const TradeModal = ({
 
     if (entryPrice === 0 || lots === 0) return '0.00';
 
-    // Calculate pip difference
-    const pipDifference = Math.abs(entryPrice - slPrice);
-
-    // Determine pip value based on pair
-    let pipValue;
-    if (pair.includes('JPY')) {
-      // For JPY pairs, 1 pip = 0.01
-      const pips = pipDifference / 0.01;
-      pipValue = pips * 10 * lots; // $10 per pip per standard lot for JPY pairs
-    } else if (pair.includes('XAU') || pair.includes('GOLD')) {
-      // For Gold (XAU/USD), 1 pip = 0.01
-      const pips = pipDifference / 0.01;
-      pipValue = pips * 10 * lots;
-    } else if (pair.includes('US30') || pair.includes('NAS100')) {
-      // For indices, 1 point = 1.00
-      const points = pipDifference / 1;
-      pipValue = points * 10 * lots;
-    } else {
-      // For standard pairs (EUR/USD, GBP/USD, etc), 1 pip = 0.0001
-      const pips = pipDifference / 0.0001;
-      pipValue = pips * 10 * lots;
-    }
-
-    // Calculate risk as percentage of account
-    const riskPercent = (pipValue / accountSize) * 100;
+    const pipSize = getPipSize(pair);
+    const pipValue = getPipValue(pair);
+    const slPips = Math.abs(entryPrice - slPrice) / pipSize;
+    const riskDollars = slPips * pipValue * lots;
+    const riskPercent = (riskDollars / accountSize) * 100;
 
     return riskPercent.toFixed(2);
   };
@@ -308,6 +332,7 @@ const TradeModal = ({
                 value={form.date}
                 onChange={handleChange}
                 className={form.errors?.date ? 'error-field' : ''}
+                onClick={(e) => e.target.showPicker?.()}
               />
             </div>
 
@@ -318,6 +343,7 @@ const TradeModal = ({
                 value={form.time}
                 onChange={handleChange}
                 className={form.errors?.time ? 'error-field' : ''}
+                onClick={(e) => e.target.showPicker?.()}
               />
             </div>
 
@@ -395,7 +421,13 @@ const TradeModal = ({
               <input
                 type="text"
                 name="riskPercent"
-                value={`${form.riskPercent}%`}
+                value={`${form.riskPercent}% / $${(
+                  (accountSize * parseFloat(form.riskPercent)) /
+                  100
+                ).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`}
                 readOnly
                 disabled
                 placeholder="Risk % (Auto)"
@@ -573,6 +605,9 @@ const JournalDetails = ({
     dateTo: '',
   });
 
+  const initialBalance =
+    selectedJournal.initialBalance || selectedJournal.accountSize;
+
   // Load user strategies from Appwrite
   useEffect(() => {
     const loadUserStrategies = async () => {
@@ -619,11 +654,19 @@ const JournalDetails = ({
     if (editTrade) {
       setTrades((prev) =>
         prev.map((t) =>
-          t.id === editTrade.id ? { ...trade, id: editTrade.id } : t
+          t.id === editTrade.id
+            ? { ...trade, id: editTrade.id, balanceAtEntry: t.balanceAtEntry }
+            : t
         )
       );
     } else {
-      setTrades((prev) => [...prev, { ...trade, id: Date.now() }]);
+      const balanceAtEntry = trades.reduce((bal, t) => {
+        return bal + (bal * calculatePnL(t)) / 100;
+      }, initialBalance);
+      setTrades((prev) => [
+        ...prev,
+        { ...trade, id: Date.now(), balanceAtEntry },
+      ]);
     }
     setShowModal(false);
     setEditTrade(null);
@@ -647,11 +690,65 @@ const JournalDetails = ({
   };
 
   const calculatePnL = (trade) => {
-    if (!trade.riskPercent) return 0;
-    const rr = calculateRR(trade);
-    return rr * parseFloat(trade.riskPercent);
+    const pnlDollars = getRiskDollars(trade) * calculateRR(trade);
+    return (pnlDollars / initialBalance) * 100;
+  };
+  const getPipSize = (pair) => {
+    if (!pair) return 0.0001;
+    if (pair.includes('JPY')) return 0.01;
+    if (pair.includes('XAU') || pair.includes('GOLD')) return 0.1;
+    if (pair.includes('XAG')) return 0.001;
+    if (
+      [
+        'US30',
+        'US100',
+        'US500',
+        'UK100',
+        'GER40',
+        'FRA40',
+        'JPN225',
+        'AUS200',
+        'HK50',
+      ].includes(pair)
+    )
+      return 1;
+    return 0.0001;
   };
 
+  const getPipValue = (pair) => {
+    if (!pair) return 10;
+    if (pair.includes('JPY')) return 1000 / 150;
+    if (pair.includes('XAU') || pair.includes('GOLD')) return 1;
+    if (pair.includes('XAG')) return 0.1;
+    if (
+      [
+        'US30',
+        'US100',
+        'US500',
+        'UK100',
+        'GER40',
+        'FRA40',
+        'JPN225',
+        'AUS200',
+        'HK50',
+      ].includes(pair)
+    )
+      return 1;
+    return 10;
+  };
+
+  const getRiskDollars = (trade) => {
+    if (!trade.entry || !trade.sl || !trade.lotSize || !trade.pair) return 0;
+    const pipSize = getPipSize(trade.pair);
+    const pipValue = getPipValue(trade.pair);
+    const slPips =
+      Math.abs(parseFloat(trade.entry) - parseFloat(trade.sl)) / pipSize;
+    return slPips * pipValue * parseFloat(trade.lotSize);
+  };
+
+  const calculatePnLDollars = (trade) => {
+    return getRiskDollars(trade) * calculateRR(trade);
+  };
   const filteredTrades = trades.filter((trade) => {
     if (
       filters.search &&
@@ -686,12 +783,24 @@ const JournalDetails = ({
       : 0;
 
   // Calculate current balance
-  const initialBalance =
-    selectedJournal.initialBalance || selectedJournal.accountSize;
+
+  const tradeBalanceMap = React.useMemo(() => {
+    const map = {};
+    let runningBalance = initialBalance;
+    const sorted = [...trades].sort((a, b) =>
+      a.date === b.date
+        ? (a.time || '').localeCompare(b.time || '')
+        : a.date.localeCompare(b.date)
+    );
+    sorted.forEach((trade) => {
+      const pnlDollars = getRiskDollars(trade) * calculateRR(trade);
+      map[trade.id] = { balanceAtEntry: runningBalance, pnlDollars };
+      runningBalance += pnlDollars;
+    });
+    return map;
+  }, [trades, initialBalance]);
   const totalPnLDollars = trades.reduce((sum, trade) => {
-    const pnlPercent = calculatePnL(trade);
-    const pnlDollars = (initialBalance * pnlPercent) / 100;
-    return sum + pnlDollars;
+    return sum + getRiskDollars(trade) * calculateRR(trade);
   }, 0);
   const currentBalance = initialBalance + totalPnLDollars;
 
@@ -710,6 +819,7 @@ const JournalDetails = ({
               <th>Exit</th>
               <th>R:R</th>
               <th>PnL %</th>
+              <th>PnL $</th>
               <th>Strategy</th>
               <th>Reflection</th>
               <th>Actions</th>
@@ -745,6 +855,13 @@ const JournalDetails = ({
                     <td className={pnl > 0 ? 'positive' : 'negative'}>
                       {pnl > 0 ? '+' : ''}
                       {pnl.toFixed(2)}%
+                    </td>
+                    <td className={pnl > 0 ? 'positive' : 'negative'}>
+                      {calculatePnLDollars(trade) > 0 ? '+' : ''}$
+                      {calculatePnLDollars(trade).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </td>
                     {/* <td>{trade.strategy || '-'}</td>
                     <td className="action-btns"> */}
@@ -851,7 +968,15 @@ const JournalDetails = ({
                           }`}
                         >
                           {calculatePnL(trade) > 0 ? '+' : ''}
-                          {calculatePnL(trade).toFixed(2)}%
+                          {calculatePnL(trade).toFixed(2)}%{' / '}
+                          {calculatePnLDollars(trade) > 0 ? '+' : ''}$
+                          {calculatePnLDollars(trade).toLocaleString(
+                            undefined,
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }
+                          )}
                         </span>
                       </div>
                       <div className="trade-info">
@@ -983,7 +1108,15 @@ const JournalDetails = ({
                     }`}
                   >
                     {pairPnL > 0 ? '+' : ''}
-                    {pairPnL.toFixed(2)}%
+                    {pairPnL.toFixed(2)}%{' / '}
+                    {(initialBalance * pairPnL) / 100 > 0 ? '+' : ''}$
+                    {((initialBalance * pairPnL) / 100).toLocaleString(
+                      undefined,
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }
+                    )}
                   </span>
                 </div>
               </div>
@@ -1124,9 +1257,7 @@ const JournalDetails = ({
           }}
           onSave={handleSaveTrade}
           editData={editTrade}
-          accountSize={
-            selectedJournal.initialBalance || selectedJournal.accountSize
-          }
+          accountSize={currentBalance}
           userStrategies={userStrategies}
         />
       )}

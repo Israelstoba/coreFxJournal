@@ -720,6 +720,7 @@
     color: #fff;
     font-size: 0.9rem;
     transition: border 0.2s;
+    cursor: pointer;
 
     &::placeholder {
       color: #666;
@@ -728,6 +729,20 @@
     &:focus {
       border: 1px solid #4caf50;
       outline: none;
+    }
+  }
+
+  input[type='date'],
+  input[type='time'] {
+    cursor: pointer;
+    color-scheme: dark;
+
+    &::-webkit-calendar-picker-indicator {
+      filter: invert(1) sepia(1) saturate(5) hue-rotate(90deg);
+      opacity: 1;
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
     }
   }
 }

@@ -32,15 +32,18 @@ const Journal = () => {
           Query.equal('userId', user.$id),
         ]);
 
-        const journalsWithTrades = response.documents.map((doc) => ({
-          id: doc.$id,
-          title: doc.title,
-          type: doc.type,
-          initialBalance: doc.initialBalance,
-          accountSize: doc.initialBalance,
-          dateCreated: doc.dateCreated,
-          trades: doc.trades ? JSON.parse(doc.trades) : [],
-        }));
+        const journalsWithTrades = response.documents.map((doc) => {
+          const trades = doc.trades ? JSON.parse(doc.trades) : [];
+          return {
+            id: doc.$id,
+            title: doc.title,
+            type: doc.type,
+            initialBalance: doc.initialBalance,
+            accountSize: doc.initialBalance,
+            dateCreated: doc.dateCreated,
+            trades,
+          };
+        });
 
         setJournals(journalsWithTrades);
       } catch (error) {
@@ -56,6 +59,50 @@ const Journal = () => {
   // ========================
   // CALCULATE CURRENT BALANCE FROM TRADES
   // ========================
+  const getPipSize = (pair) => {
+    if (!pair) return 0.0001;
+    if (pair.includes('JPY')) return 0.01;
+    if (pair.includes('XAU') || pair.includes('GOLD')) return 0.1;
+    if (pair.includes('XAG')) return 0.001;
+    if (
+      [
+        'US30',
+        'US100',
+        'US500',
+        'UK100',
+        'GER40',
+        'FRA40',
+        'JPN225',
+        'AUS200',
+        'HK50',
+      ].includes(pair)
+    )
+      return 1;
+    return 0.0001;
+  };
+
+  const getPipValue = (pair) => {
+    if (!pair) return 10;
+    if (pair.includes('JPY')) return 1000 / 150;
+    if (pair.includes('XAU') || pair.includes('GOLD')) return 1;
+    if (pair.includes('XAG')) return 0.1;
+    if (
+      [
+        'US30',
+        'US100',
+        'US500',
+        'UK100',
+        'GER40',
+        'FRA40',
+        'JPN225',
+        'AUS200',
+        'HK50',
+      ].includes(pair)
+    )
+      return 1;
+    return 10;
+  };
+
   const calculateCurrentBalance = (journal) => {
     try {
       const initialBalance = journal.initialBalance;
@@ -63,36 +110,34 @@ const Journal = () => {
 
       if (trades.length === 0) return initialBalance;
 
-      // Calculate total P&L in dollars
       const totalPnLDollars = trades.reduce((sum, trade) => {
-        if (
-          !trade.riskPercent ||
-          !trade.entry ||
-          !trade.sl ||
-          (!trade.tp && !trade.exit)
-        ) {
+        if (!trade.entry || !trade.sl || !trade.lotSize || !trade.pair)
           return sum;
-        }
 
         const entry = parseFloat(trade.entry);
         const sl = parseFloat(trade.sl);
         const tpOrExit = trade.exit
           ? parseFloat(trade.exit)
           : parseFloat(trade.tp);
+        if (!tpOrExit) return sum;
+
         const isBuy = tpOrExit > entry;
         const risk = isBuy ? entry - sl : sl - entry;
         const reward = isBuy ? tpOrExit - entry : entry - tpOrExit;
         const rr = risk === 0 ? 0 : reward / risk;
-        const pnlPercent = rr * parseFloat(trade.riskPercent);
-        const pnlDollars = (initialBalance * pnlPercent) / 100;
 
-        return sum + pnlDollars;
+        const pipSize = getPipSize(trade.pair);
+        const pipValue = getPipValue(trade.pair);
+        const slPips = Math.abs(entry - sl) / pipSize;
+        const riskDollars = slPips * pipValue * parseFloat(trade.lotSize);
+
+        return sum + riskDollars * rr;
       }, 0);
 
       return initialBalance + totalPnLDollars;
     } catch (err) {
       console.error('Error calculating balance:', err);
-      return initialBalance;
+      return journal.initialBalance;
     }
   };
 
@@ -148,6 +193,8 @@ const Journal = () => {
       if (updates.title) updateData.title = updates.title;
       if (updates.type) updateData.type = updates.type;
       if (updates.trades) updateData.trades = JSON.stringify(updates.trades);
+      // if (updates.currentBalance !== undefined)
+      //   updateData.currentBalance = updates.currentBalance;
 
       await databases.updateDocument(DATABASE_ID, TABLE_ID, id, updateData);
 
