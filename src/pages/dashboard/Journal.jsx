@@ -3,6 +3,7 @@ import { PlusCircle } from 'lucide-react';
 import JournalModal from '@/components/journal/JournalModal';
 import JournalCard from '@/components/journal/JournalCard';
 import JournalDetails from '@/pages/dashboard/JournalDetails';
+import FeatureGuard from '../../components/FeatureGuard';
 import { useAuth } from '../../context/AuthContext';
 import { databases } from '../../lib/appwrite';
 import { Query, ID } from 'appwrite';
@@ -193,8 +194,6 @@ const Journal = () => {
       if (updates.title) updateData.title = updates.title;
       if (updates.type) updateData.type = updates.type;
       if (updates.trades) updateData.trades = JSON.stringify(updates.trades);
-      // if (updates.currentBalance !== undefined)
-      //   updateData.currentBalance = updates.currentBalance;
 
       await databases.updateDocument(DATABASE_ID, TABLE_ID, id, updateData);
 
@@ -242,84 +241,86 @@ const Journal = () => {
   };
 
   // ========================
-  // SHOW JOURNAL DETAILS
+  // RENDER CONTENT (Protected by FeatureGuard)
   // ========================
-  if (selectedJournal) {
-    return (
-      <JournalDetails
-        selectedJournal={selectedJournal}
-        onBack={handleBack}
-        onUpdateJournal={handleUpdateJournal}
-        key={selectedJournal.id}
-      />
-    );
-  }
-
-  // ========================
-  // JOURNAL LIST VIEW
-  // ========================
-  if (loading) {
-    return (
-      <div className="journal-page">
-        <div className="empty-state">
-          <p>Loading journals...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="journal-page">
-        <div className="empty-state">
-          <p>Loading journals...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="journal-page">
-      <div className="journal-header">
-        <h2>My Journals</h2>
-
-        <button className="add-journal-btn" onClick={() => setShowModal(true)}>
-          <PlusCircle size={18} />
-          Add Journal
-        </button>
-      </div>
-
-      {journals.length === 0 ? (
-        <div className="empty-state">
-          <p>You don't have any journals yet.</p>
-          <button onClick={() => setShowModal(true)}>Create One</button>
-        </div>
-      ) : (
-        <div className="journal-grid">
-          {journals.map((journal) => {
-            const currentBalance = calculateCurrentBalance(journal);
-
-            return (
-              <JournalCard
-                key={journal.id}
-                journal={{ ...journal, currentBalance }}
-                onOpen={() => handleOpenJournal(journal)}
-                onDelete={() => handleDeleteJournal(journal.id)}
-                onUpdate={(updates) => handleUpdateJournal(journal.id, updates)}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {showModal && (
-        <JournalModal
-          onClose={() => setShowModal(false)}
-          onSave={handleAddJournal}
+  const renderContent = () => {
+    // SHOW JOURNAL DETAILS
+    if (selectedJournal) {
+      return (
+        <JournalDetails
+          selectedJournal={selectedJournal}
+          onBack={handleBack}
+          onUpdateJournal={handleUpdateJournal}
+          key={selectedJournal.id}
         />
-      )}
-    </div>
-  );
+      );
+    }
+
+    // LOADING STATE
+    if (loading) {
+      return (
+        <div className="journal-page">
+          <div className="empty-state">
+            <p>Loading journals...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // JOURNAL LIST VIEW
+    return (
+      <div className="journal-page">
+        <div className="journal-header">
+          <h2>My Journals</h2>
+
+          <button
+            className="add-journal-btn"
+            onClick={() => setShowModal(true)}
+          >
+            <PlusCircle size={18} />
+            Add Journal
+          </button>
+        </div>
+
+        {journals.length === 0 ? (
+          <div className="empty-state">
+            <p>You don't have any journals yet.</p>
+            <button onClick={() => setShowModal(true)}>Create One</button>
+          </div>
+        ) : (
+          <div className="journal-grid">
+            {journals.map((journal) => {
+              const currentBalance = calculateCurrentBalance(journal);
+
+              return (
+                <JournalCard
+                  key={journal.id}
+                  journal={{ ...journal, currentBalance }}
+                  onOpen={() => handleOpenJournal(journal)}
+                  onDelete={() => handleDeleteJournal(journal.id)}
+                  onUpdate={(updates) =>
+                    handleUpdateJournal(journal.id, updates)
+                  }
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {showModal && (
+          <JournalModal
+            onClose={() => setShowModal(false)}
+            onSave={handleAddJournal}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // ========================
+  // WRAP EVERYTHING IN FEATUREGUARD
+  // ========================
+  return <FeatureGuard feature="journal">{renderContent()}</FeatureGuard>;
 };
 
 export default Journal;

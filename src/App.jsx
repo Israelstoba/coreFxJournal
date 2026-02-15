@@ -14,7 +14,12 @@ import AuthPage from './pages/AuthPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import ResetPassword from './pages/ResetPassword';
 
-// ✅ Dashboard imports
+// Admin Dashboard Imports
+import AdminLogin from './components/admin/AdminLogin';
+import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+// ✅User  Dashboard imports
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import Journal from './pages/dashboard/Journal';
 import Playbooks from './pages/dashboard/Playbooks';
@@ -73,7 +78,32 @@ function App() {
           }
         />
 
-        <Route path="/reset-password" element={<ResetPassword />} />
+        {/* ADMIN DASHBOARD ROUTE */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 🔐 Auth Page (No Navbar or Footer) */}
+        <Route path="/auth" element={<AuthPage />} />
+
+        {/* 🔒 ADMIN ROUTES - PROTECTED */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard />
+            </ProtectedAdminRoute>
+          }
+        />
+        <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
+
+        {/* 💼 Dashboard Section (Protected - No Navbar or Footer) */}
 
         {/* 🔐 Auth Page (No Navbar or Footer) */}
         <Route path="/auth" element={<AuthPage />} />

@@ -1,6 +1,6 @@
 // src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react';
-import { account } from '../lib/appwrite';
+import { account, databases } from '../lib/appwrite';
 import { ID } from 'appwrite';
 
 const AuthContext = createContext();
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Create new account
-      await account.create(ID.unique(), email, password, name);
+      const newUser = await account.create(ID.unique(), email, password, name);
 
       // Create session (login)
       await account.createEmailPasswordSession(email, password);
@@ -52,6 +52,29 @@ export const AuthProvider = ({ children }) => {
       // Get user data
       const currentUser = await account.get();
       setUser(currentUser);
+
+      // Create user record in Users collection
+      const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+      const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
+
+      try {
+        await databases.createDocument(
+          DATABASE_ID,
+          USERS_TABLE_ID,
+          currentUser.$id,
+          {
+            userId: currentUser.$id,
+            email: email,
+            name: name || 'Unknown',
+            plan: 'free',
+            status: 'active',
+            lastActive: new Date().toISOString(),
+          }
+        );
+      } catch (error) {
+        console.error('Failed to create user record:', error);
+        // Don't throw - user is still registered, just missing the record
+      }
     } catch (error) {
       throw error;
     }
@@ -76,6 +99,48 @@ export const AuthProvider = ({ children }) => {
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get();
       setUser(currentUser);
+
+      // Create user record if doesn't exist (for existing users before this feature)
+      const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+      const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
+
+      try {
+        await databases.getDocument(
+          DATABASE_ID,
+          USERS_TABLE_ID,
+          currentUser.$id
+        );
+        // Update last active
+        await databases.updateDocument(
+          DATABASE_ID,
+          USERS_TABLE_ID,
+          currentUser.$id,
+          {
+            lastActive: new Date().toISOString(),
+          }
+        );
+      } catch (error) {
+        // User record doesn't exist, create it
+        if (error.code === 404) {
+          try {
+            await databases.createDocument(
+              DATABASE_ID,
+              USERS_TABLE_ID,
+              currentUser.$id,
+              {
+                userId: currentUser.$id,
+                email: currentUser.email,
+                name: currentUser.name || 'Unknown',
+                plan: 'free',
+                status: 'active',
+                lastActive: new Date().toISOString(),
+              }
+            );
+          } catch (createError) {
+            console.error('Failed to create user record:', createError);
+          }
+        }
+      }
     } catch (error) {
       throw error;
     }
