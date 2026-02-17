@@ -1,6 +1,7 @@
 // main.scss
 @use './variables' as *;
 
+@import '../../src/pages/admin/admin';
 * {
   margin: 0;
   padding: 0;

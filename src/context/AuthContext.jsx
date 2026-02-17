@@ -57,23 +57,57 @@ export const AuthProvider = ({ children }) => {
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
 
-      try {
-        await databases.createDocument(
-          DATABASE_ID,
-          USERS_TABLE_ID,
-          currentUser.$id,
-          {
-            userId: currentUser.$id,
-            email: email,
-            name: name || 'Unknown',
-            plan: 'free',
-            status: 'active',
-            lastActive: new Date().toISOString(),
+      // Retry mechanism for document creation
+      let retries = 3;
+      let documentCreated = false;
+
+      while (retries > 0 && !documentCreated) {
+        try {
+          const userDoc = await databases.createDocument(
+            DATABASE_ID,
+            USERS_TABLE_ID,
+            currentUser.$id,
+            {
+              userId: currentUser.$id,
+              email: email,
+              name: name || 'Unknown',
+              plan: 'free',
+              status: 'active',
+              lastActive: new Date().toISOString(),
+              hasJournalAccess: false,
+              hasStrategiesAccess: false,
+              hasBotAccess: false,
+              hasAnalyticsAccess: false,
+            }
+          );
+          console.log('✅ User document created successfully:', userDoc.$id);
+          documentCreated = true;
+        } catch (error) {
+          retries--;
+          console.error(
+            `❌ Attempt ${3 - retries} failed to create user record:`,
+            error
+          );
+
+          if (retries === 0) {
+            console.error(
+              '❌ CRITICAL: All retries exhausted. User document not created.'
+            );
+            console.error('Error details:', {
+              code: error.code,
+              message: error.message,
+              type: error.type,
+              userId: currentUser.$id,
+              email: email,
+            });
+            alert(
+              '⚠️ Registration completed but profile setup failed. Please try logging in - your profile will be created automatically.'
+            );
+          } else {
+            // Wait 1 second before retry
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
-        );
-      } catch (error) {
-        console.error('Failed to create user record:', error);
-        // Don't throw - user is still registered, just missing the record
+        }
       }
     } catch (error) {
       throw error;
@@ -122,22 +156,44 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         // User record doesn't exist, create it
         if (error.code === 404) {
-          try {
-            await databases.createDocument(
-              DATABASE_ID,
-              USERS_TABLE_ID,
-              currentUser.$id,
-              {
-                userId: currentUser.$id,
-                email: currentUser.email,
-                name: currentUser.name || 'Unknown',
-                plan: 'free',
-                status: 'active',
-                lastActive: new Date().toISOString(),
+          console.log('⚠️ User document missing, creating now...');
+
+          let retries = 3;
+          let documentCreated = false;
+
+          while (retries > 0 && !documentCreated) {
+            try {
+              const userDoc = await databases.createDocument(
+                DATABASE_ID,
+                USERS_TABLE_ID,
+                currentUser.$id,
+                {
+                  userId: currentUser.$id,
+                  email: currentUser.email,
+                  name: currentUser.name || 'Unknown',
+                  plan: 'free',
+                  status: 'active',
+                  lastActive: new Date().toISOString(),
+                  hasJournalAccess: false,
+                  hasStrategiesAccess: false,
+                  hasBotAccess: false,
+                  hasAnalyticsAccess: false,
+                }
+              );
+              console.log('✅ User document created on login:', userDoc.$id);
+              documentCreated = true;
+            } catch (createError) {
+              retries--;
+              console.error(`❌ Attempt ${3 - retries} failed:`, createError);
+
+              if (retries > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+              } else {
+                console.error(
+                  '❌ Failed to create user document after all retries'
+                );
               }
-            );
-          } catch (createError) {
-            console.error('Failed to create user record:', createError);
+            }
           }
         }
       }

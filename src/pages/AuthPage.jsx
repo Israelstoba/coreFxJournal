@@ -13,6 +13,7 @@ const AuthPage = () => {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
@@ -50,6 +51,15 @@ const AuthPage = () => {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    // Confirm password validation (only for signup)
+    if (!isLogin) {
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
     }
 
     setErrors(newErrors);
@@ -124,7 +134,7 @@ const AuthPage = () => {
     setIsLogin(!isLogin);
     setErrors({});
     setServerError('');
-    setFormData({ name: '', email: '', password: '' });
+    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
     setShowForgotPassword(false);
     setForgotEmail('');
   };
@@ -264,6 +274,41 @@ const AuthPage = () => {
                   <p className="auth-error">{errors.password}</p>
                 )}
               </div>
+
+              {/* Confirm Password field (only for signup) */}
+              {!isLogin && (
+                <div className="auth-field password-field">
+                  <div className="auth-input-wrapper">
+                    <Lock
+                      size={20}
+                      className={`auth-icon ${
+                        errors.confirmPassword ? 'error' : ''
+                      }`}
+                    />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      placeholder="Confirm Password"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                      className={`has-toggle ${
+                        errors.confirmPassword ? 'error' : ''
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="toggle-password-btn"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="auth-error">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              )}
 
               {/* Forgot Password (only for login) */}
               {isLogin && (

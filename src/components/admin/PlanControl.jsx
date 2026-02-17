@@ -137,33 +137,24 @@ const PlanControl = () => {
     );
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setSaving(true);
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Save to Appwrite
-      const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-      const PLANS_CONFIG_ID = import.meta.env.VITE_APPWRITE_PLANS_CONFIG_ID;
-      await databases.createDocument(
-        DATABASE_ID,
-        PLANS_CONFIG_ID,
-        ID.unique(),
-        {
-          plans: JSON.stringify(plans),
-          globalSettings: JSON.stringify(globalSettings),
-        }
-      );
-
+    // Simulate save (no database needed for now)
+    setTimeout(() => {
       setEditing(false);
-      alert('Plan configuration saved successfully!');
-    } catch (error) {
-      console.error('Error saving plans:', error);
-      alert('Failed to save configuration');
-    } finally {
       setSaving(false);
-    }
+
+      // Log the configuration to console for reference
+      console.log('📋 Plan Configuration:', {
+        plans,
+        globalSettings,
+      });
+
+      alert(
+        '✅ Plan configuration updated!\n\n💡 Note: This is currently a visual planning tool. The actual plan enforcement happens through:\n• User Management (upgrade/downgrade buttons)\n• Feature Flags (individual user access control)'
+      );
+    }, 500);
   };
 
   const updateGlobalSetting = (key, value) => {
@@ -441,8 +432,10 @@ const PlanControl = () => {
 
       <div className="save-notice">
         <p>
-          ⚠️ To persist changes, you need to create a{' '}
-          <strong>plan_configs</strong> collection in Appwrite
+          ℹ️ This is a <strong>visual planning tool</strong>. Changes are for
+          reference only. Actual plan control is done via{' '}
+          <strong>User Management</strong> and <strong>Feature Flags</strong>{' '}
+          tabs.
         </p>
       </div>
     </div>
