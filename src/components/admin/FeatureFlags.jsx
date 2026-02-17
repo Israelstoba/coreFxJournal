@@ -202,8 +202,23 @@ const FeatureFlags = () => {
                 filteredUsers.map((user) => (
                   <tr key={user.$id}>
                     <td className="user-cell">
-                      <div className="user-avatar">
-                        {user.name?.[0]?.toUpperCase() || 'U'}
+                      <div className="user-avatar-wrapper">
+                        <div className="user-avatar">
+                          {user.name?.[0]?.toUpperCase() || 'U'}
+                        </div>
+                        {/* Show special privilege badge for free users with pro features */}
+                        {user.plan !== 'pro' &&
+                          (user.hasJournalAccess ||
+                            user.hasStrategiesAccess ||
+                            user.hasBotAccess ||
+                            user.hasAnalyticsAccess) && (
+                            <div
+                              className="special-privilege-badge"
+                              title="Special privileges granted by admin"
+                            >
+                              ⭐
+                            </div>
+                          )}
                       </div>
                       <div className="user-info">
                         <p className="user-name">{user.name || 'Unknown'}</p>

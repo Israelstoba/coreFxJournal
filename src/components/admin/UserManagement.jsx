@@ -359,8 +359,23 @@ const UserManagement = () => {
               filteredUsers.map((user) => (
                 <tr key={user.$id}>
                   <td className="user-cell">
-                    <div className="user-avatar">
-                      {user.name?.[0]?.toUpperCase() || 'U'}
+                    <div className="user-avatar-wrapper">
+                      <div className="user-avatar">
+                        {user.name?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      {/* Show special privilege badge for free users with pro features enabled */}
+                      {user.plan !== 'pro' &&
+                        (user.hasJournalAccess ||
+                          user.hasStrategiesAccess ||
+                          user.hasBotAccess ||
+                          user.hasAnalyticsAccess) && (
+                          <div
+                            className="special-privilege-badge"
+                            title="Special privileges granted"
+                          >
+                            ⭐
+                          </div>
+                        )}
                     </div>
                     <span>{user.name || 'Unknown'}</span>
                   </td>
