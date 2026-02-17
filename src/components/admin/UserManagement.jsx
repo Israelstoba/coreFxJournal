@@ -379,7 +379,19 @@ const UserManagement = () => {
                     </div>
                     <span>{user.name || 'Unknown'}</span>
                   </td>
-                  <td>{user.email}</td>
+                  <td>
+                    <div className="email-cell">
+                      {user.email}
+                      {user.emailVerification === false && (
+                        <span
+                          className="unverified-badge"
+                          title="Email not verified"
+                        >
+                          ⚠️ Unverified
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td>
                     <span className={`plan-badge ${user.plan || 'free'}`}>
                       {user.plan === 'pro' && <Crown size={14} />}

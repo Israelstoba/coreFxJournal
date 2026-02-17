@@ -57,6 +57,16 @@ export const AuthProvider = ({ children }) => {
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
 
+      // Send verification email
+      try {
+        const verifyUrl = `${window.location.origin}/verify-email`;
+        await account.createVerification(verifyUrl);
+        console.log('✅ Verification email sent to:', email);
+      } catch (error) {
+        console.error('Failed to send verification email:', error);
+        // Don't block registration if email fails
+      }
+
       // Retry mechanism for document creation
       let retries = 3;
       let documentCreated = false;
