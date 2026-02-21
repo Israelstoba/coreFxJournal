@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { databases } from '../../lib/appwrite';
+import { databases, functions } from '../../lib/appwrite';
 import { Query } from 'appwrite';
-import { Search, Crown, Shield, Ban, RefreshCw } from 'lucide-react';
+import { Search, Crown, Shield, Ban, RefreshCw, Zap } from 'lucide-react';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
 
   const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
   const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
+  const SYNC_FUNCTION_ID = import.meta.env.VITE_APPWRITE_SYNC_FUNCTION_ID;
 
   useEffect(() => {
     console.log('🔄 UserManagement mounted - loading users...');
@@ -64,7 +66,6 @@ const UserManagement = () => {
       await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
         plan: 'pro',
         planUpdatedAt: new Date().toISOString(),
-        // Enable all features for Pro users
         hasJournalAccess: true,
         hasStrategiesAccess: true,
         hasBotAccess: true,
@@ -89,7 +90,6 @@ const UserManagement = () => {
       await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
         plan: 'free',
         planUpdatedAt: new Date().toISOString(),
-        // Disable all premium features for Free users
         hasJournalAccess: false,
         hasStrategiesAccess: false,
         hasBotAccess: false,
@@ -100,6 +100,51 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error downgrading user:', error);
       alert('Failed to downgrade user');
+    }
+  };
+
+  const handleSyncUsers = async () => {
+    if (
+      !confirm(
+        '🔄 Sync Auth Users?\n\n' +
+          'This will:\n' +
+          '• Remove users deleted from Appwrite Auth\n' +
+          '• Add any new Auth users missing from database\n\n' +
+          'Continue?'
+      )
+    )
+      return;
+
+    setSyncing(true);
+
+    try {
+      const execution = await functions.createExecution(
+        SYNC_FUNCTION_ID,
+        '',
+        false
+      );
+
+      const result = JSON.parse(execution.responseBody);
+
+      if (result.success) {
+        await loadUsers(true);
+        alert(
+          `✅ Sync Complete!\n\n` +
+            `👥 Total Auth Users: ${result.authUsers}\n` +
+            `📊 DB Documents: ${result.dbDocuments}\n` +
+            `🗑️ Orphans Deleted: ${result.orphansDeleted}\n` +
+            `➕ Missing Created: ${result.missingCreated}`
+        );
+      } else {
+        alert(`❌ Sync failed: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('Sync error:', err);
+      alert(
+        '❌ Sync failed. Check that the function is deployed and variables are set correctly.'
+      );
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -114,7 +159,6 @@ const UserManagement = () => {
     try {
       await databases.deleteDocument(DATABASE_ID, USERS_TABLE_ID, userId);
       loadUsers();
-
       showDeleteInstructions(userId, userEmail);
 
       // Copy user ID to clipboard for easy lookup
@@ -128,7 +172,6 @@ const UserManagement = () => {
   };
 
   const showDeleteInstructions = (userId, userEmail) => {
-    // Create modal overlay
     const modal = document.createElement('div');
     modal.style.cssText = `
       position: fixed;
@@ -143,7 +186,6 @@ const UserManagement = () => {
       z-index: 10000;
     `;
 
-    // Create modal content
     modal.innerHTML = `
       <div style="
         background: white;
@@ -178,9 +220,6 @@ const UserManagement = () => {
             margin: 0 0 12px 0;
             color: #856404;
             font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
           ">
             ⚠️ Important: Complete the Deletion
           </h3>
@@ -207,7 +246,7 @@ const UserManagement = () => {
         ">
           User ID: ${userId}
           <div style="margin-top: 8px;">
-            <button onclick="navigator.clipboard.writeText('${userId}'); this.innerHTML='✓ Copied!'; this.style.background='#4caf50';" style="
+            <button onclick="navigator.clipboard.writeText('${userId}'); this.innerHTML='✓ Copied!'; this.style.background='#45a049';" style="
               padding: 6px 12px;
               background: #4caf50;
               color: white;
@@ -222,7 +261,7 @@ const UserManagement = () => {
           </div>
         </div>
 
-        <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" style="
+        <button onclick="this.closest('[style*=\'position: fixed\']').remove()" style="
           width: 100%;
           padding: 12px;
           background: #4caf50;
@@ -240,12 +279,10 @@ const UserManagement = () => {
 
     document.body.appendChild(modal);
 
-    // Copy to clipboard automatically
     navigator.clipboard.writeText(userId).catch(() => {
       console.log('Could not copy user ID to clipboard');
     });
 
-    // Remove modal when clicking outside
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
@@ -290,11 +327,21 @@ const UserManagement = () => {
         <button
           className="refresh-users-btn"
           onClick={() => loadUsers(true)}
-          disabled={refreshing}
+          disabled={refreshing || syncing}
           title="Refresh user list"
         >
           <RefreshCw size={18} className={refreshing ? 'spinning' : ''} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+
+        <button
+          className="sync-users-btn"
+          onClick={handleSyncUsers}
+          disabled={syncing || refreshing}
+          title="Sync auth users with database"
+        >
+          <Zap size={18} className={syncing ? 'spinning' : ''} />
+          {syncing ? 'Syncing...' : 'Sync Auth Users'}
         </button>
 
         <div className="search-box">
@@ -363,7 +410,6 @@ const UserManagement = () => {
                       <div className="user-avatar">
                         {user.name?.[0]?.toUpperCase() || 'U'}
                       </div>
-                      {/* Show special privilege badge for free users with pro features enabled */}
                       {user.plan !== 'pro' &&
                         (user.hasJournalAccess ||
                           user.hasStrategiesAccess ||
