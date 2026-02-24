@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { databases, functions } from '../../lib/appwrite';
 import { Query } from 'appwrite';
-import { Search, Crown, Shield, Ban, RefreshCw, Zap } from 'lucide-react';
+import { Search, Crown, Shield, Ban, RefreshCw } from 'lucide-react';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
@@ -14,12 +13,12 @@ const UserManagement = () => {
   const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
   const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
   const SYNC_FUNCTION_ID = import.meta.env.VITE_APPWRITE_SYNC_FUNCTION_ID;
+  const DELETE_FUNCTION_ID = import.meta.env.VITE_APPWRITE_DELETE_FUNCTION_ID;
 
   useEffect(() => {
     console.log('🔄 UserManagement mounted - loading users...');
     loadUsers();
 
-    // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing users...');
       loadUsers();
@@ -31,32 +30,23 @@ const UserManagement = () => {
     };
   }, []);
 
-  // Debug: Log when users state changes
   useEffect(() => {
     console.log(`📊 Users state updated: ${users.length} users`);
   }, [users]);
 
-  const loadUsers = async (isManualRefresh = false) => {
-    if (isManualRefresh) {
-      setRefreshing(true);
-    }
-
+  const loadUsers = async () => {
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
         USERS_TABLE_ID
       );
-
-      // Force state update by creating new array
       setUsers([...response.documents]);
-
       console.log(`✅ Loaded ${response.documents.length} users`);
     } catch (error) {
       console.error('Error loading users:', error);
       alert('Failed to load users. Please check your connection.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -104,45 +94,28 @@ const UserManagement = () => {
   };
 
   const handleSyncUsers = async () => {
-    if (
-      !confirm(
-        '🔄 Sync Auth Users?\n\n' +
-          'This will:\n' +
-          '• Remove users deleted from Appwrite Auth\n' +
-          '• Add any new Auth users missing from database\n\n' +
-          'Continue?'
-      )
-    )
-      return;
-
     setSyncing(true);
-
     try {
+      await loadUsers();
       const execution = await functions.createExecution(
         SYNC_FUNCTION_ID,
         '',
         false
       );
-
       const result = JSON.parse(execution.responseBody);
-
       if (result.success) {
-        await loadUsers(true);
-        alert(
-          `✅ Sync Complete!\n\n` +
-            `👥 Total Auth Users: ${result.authUsers}\n` +
-            `📊 DB Documents: ${result.dbDocuments}\n` +
-            `🗑️ Orphans Deleted: ${result.orphansDeleted}\n` +
-            `➕ Missing Created: ${result.missingCreated}`
-        );
+        await loadUsers();
+        if (result.orphansDeleted > 0 || result.missingCreated > 0) {
+          alert(
+            `✅ Sync Complete!\n\n🗑️ Orphans Removed: ${result.orphansDeleted}\n➕ Missing Created: ${result.missingCreated}`
+          );
+        }
       } else {
         alert(`❌ Sync failed: ${result.error}`);
       }
     } catch (err) {
       console.error('Sync error:', err);
-      alert(
-        '❌ Sync failed. Check that the function is deployed and variables are set correctly.'
-      );
+      alert('❌ Sync failed. Check console for details.');
     } finally {
       setSyncing(false);
     }
@@ -151,143 +124,50 @@ const UserManagement = () => {
   const handleDeleteUser = async (userId, userEmail) => {
     if (
       !confirm(
-        `⚠️ DANGER: Delete user "${userEmail}"?\n\nThis will:\n1. Remove their database record\n2. You'll need to manually delete their Auth account\n\nAre you absolutely sure?`
+        `⚠️ DANGER: Permanently delete user "${userEmail}"?\n\nThis will delete:\n• Their auth account\n• Their database record\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?`
       )
     )
       return;
-
     try {
-      await databases.deleteDocument(DATABASE_ID, USERS_TABLE_ID, userId);
-      loadUsers();
-      showDeleteInstructions(userId, userEmail);
+      console.log('🗑️ Deleting user:', userId);
+      console.log('DELETE_FUNCTION_ID:', DELETE_FUNCTION_ID);
 
-      // Copy user ID to clipboard for easy lookup
-      navigator.clipboard.writeText(userId).catch(() => {
-        console.log('Could not copy user ID to clipboard');
-      });
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('❌ Failed to delete user record');
-    }
-  };
+      const execution = await functions.createExecution(
+        DELETE_FUNCTION_ID,
+        JSON.stringify({ userId }),
+        false
+      );
 
-  const showDeleteInstructions = (userId, userEmail) => {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    `;
+      console.log('Execution response:', execution);
+      console.log('Response body:', execution.responseBody);
 
-    modal.innerHTML = `
-      <div style="
-        background: white;
-        border-radius: 16px;
-        padding: 32px;
-        max-width: 500px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      ">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <div style="
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            font-size: 32px;
-          ">✓</div>
-          <h2 style="margin: 0; color: #1a202c; font-size: 24px;">Database Record Deleted!</h2>
-        </div>
+      const result = JSON.parse(execution.responseBody);
+      console.log('Parsed result:', result);
 
-        <div style="
-          background: #fff3cd;
-          border: 2px solid #ffc107;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 24px;
-        ">
-          <h3 style="
-            margin: 0 0 12px 0;
-            color: #856404;
-            font-size: 16px;
-          ">
-            ⚠️ Important: Complete the Deletion
-          </h3>
-          <p style="margin: 0 0 16px 0; color: #856404; line-height: 1.6; font-size: 14px;">
-            To fully remove this user, you must also delete their authentication account:
-          </p>
-          <ol style="margin: 0; padding-left: 20px; color: #856404;">
-            <li style="margin-bottom: 8px;">Go to <strong>Appwrite Console</strong></li>
-            <li style="margin-bottom: 8px;">Navigate to <strong>Auth → Users</strong></li>
-            <li style="margin-bottom: 8px;">Search for: <strong>${userEmail}</strong></li>
-            <li>Click delete on their auth account</li>
-          </ol>
-        </div>
-
-        <div style="
-          background: #f7fafc;
-          border-radius: 8px;
-          padding: 12px;
-          margin-bottom: 24px;
-          font-family: monospace;
-          font-size: 12px;
-          color: #4a5568;
-          text-align: center;
-        ">
-          User ID: ${userId}
-          <div style="margin-top: 8px;">
-            <button onclick="navigator.clipboard.writeText('${userId}'); this.innerHTML='✓ Copied!'; this.style.background='#45a049';" style="
-              padding: 6px 12px;
-              background: #4caf50;
-              color: white;
-              border: none;
-              border-radius: 6px;
-              cursor: pointer;
-              font-size: 12px;
-              font-weight: 600;
-            ">
-              📋 Copy User ID
-            </button>
-          </div>
-        </div>
-
-        <button onclick="this.closest('[style*=\'position: fixed\']').remove()" style="
-          width: 100%;
-          padding: 12px;
-          background: #4caf50;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: 600;
-        ">
-          Got It!
-        </button>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    navigator.clipboard.writeText(userId).catch(() => {
-      console.log('Could not copy user ID to clipboard');
-    });
-
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.remove();
+      if (result.success) {
+        await loadUsers();
+        alert(
+          '✅ User Completely Deleted!\n\nAuth Account: Deleted ✓\nDatabase Record: Deleted ✓'
+        );
+      } else {
+        const authStatus = result.authDeleted
+          ? 'Deleted ✓'
+          : `Failed - ${result.authError || 'Unknown error'}`;
+        const dbStatus = result.dbDeleted
+          ? 'Deleted ✓'
+          : `Failed - ${result.dbError || 'Unknown error'}`;
+        alert(
+          `⚠️ Partial Deletion\n\nAuth: ${authStatus}\nDatabase: ${dbStatus}`
+        );
+        await loadUsers();
       }
-    });
+    } catch (error) {
+      console.error('❌ Delete error:', error);
+      console.error('Error details:', error.message, error.stack);
+      alert(
+        `❌ Failed to delete user.\n\nError: ${error.message}\n\nCheck console for details.`
+      );
+    }
   };
 
   const handleSuspend = async (userId, currentStatus) => {
@@ -325,25 +205,14 @@ const UserManagement = () => {
     <div className="user-management">
       <div className="controls-bar">
         <button
-          className="refresh-users-btn"
-          onClick={() => loadUsers(true)}
-          disabled={refreshing || syncing}
-          title="Refresh user list"
-        >
-          <RefreshCw size={18} className={refreshing ? 'spinning' : ''} />
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
-
-        <button
           className="sync-users-btn"
           onClick={handleSyncUsers}
-          disabled={syncing || refreshing}
-          title="Sync auth users with database"
+          disabled={syncing}
+          title="Sync users between auth and database"
         >
-          <Zap size={18} className={syncing ? 'spinning' : ''} />
-          {syncing ? 'Syncing...' : 'Sync Auth Users'}
+          <RefreshCw size={18} className={syncing ? 'spinning' : ''} />
+          {syncing ? 'Syncing...' : 'Sync Users'}
         </button>
-
         <div className="search-box">
           <Search size={18} />
           <input
@@ -353,7 +222,6 @@ const UserManagement = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
         <div className="filter-buttons">
           <button
             className={filter === 'all' ? 'active' : ''}
@@ -381,7 +249,6 @@ const UserManagement = () => {
           </button>
         </div>
       </div>
-
       <div className="users-table-wrapper">
         <table className="users-table">
           <thead>
@@ -488,7 +355,7 @@ const UserManagement = () => {
                     <button
                       className="btn-delete"
                       onClick={() => handleDeleteUser(user.$id, user.email)}
-                      title="Delete user record"
+                      title="Delete user completely"
                     >
                       🗑️
                     </button>
