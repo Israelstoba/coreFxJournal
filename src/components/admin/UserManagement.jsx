@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { databases, functions } from '../../lib/appwrite';
 import { Query } from 'appwrite';
 import { Search, Crown, Shield, Ban, RefreshCw } from 'lucide-react';
+import Modal from './Modal';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -9,6 +10,40 @@ const UserManagement = () => {
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [modal, setModal] = useState({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+    details: null,
+    onConfirm: null,
+  });
+
+  const showModal = (type, title, message, details = null) => {
+    setModal({ isOpen: true, type, title, message, details, onConfirm: null });
+  };
+
+  const showConfirm = (title, message, onConfirm) => {
+    setModal({
+      isOpen: true,
+      type: 'confirm',
+      title,
+      message,
+      details: null,
+      onConfirm,
+    });
+  };
+
+  const closeModal = () => {
+    setModal({
+      isOpen: false,
+      type: 'info',
+      title: '',
+      message: '',
+      details: null,
+      onConfirm: null,
+    });
+  };
 
   const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
   const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
@@ -51,46 +86,69 @@ const UserManagement = () => {
   };
 
   const handleUpgrade = async (userId) => {
-    if (!confirm('Upgrade user to Pro plan?')) return;
-    try {
-      await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
-        plan: 'pro',
-        planUpdatedAt: new Date().toISOString(),
-        hasJournalAccess: true,
-        hasStrategiesAccess: true,
-        hasBotAccess: true,
-        hasAnalyticsAccess: true,
-      });
-      loadUsers();
-      alert('User upgraded to Pro! All features enabled.');
-    } catch (error) {
-      console.error('Error upgrading user:', error);
-      alert('Failed to upgrade user');
-    }
+    showConfirm(
+      'Upgrade to Pro',
+      'Are you sure you want to upgrade this user to Pro plan?\n\nAll premium features will be enabled.',
+      async () => {
+        closeModal();
+        try {
+          await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
+            plan: 'pro',
+            planUpdatedAt: new Date().toISOString(),
+            hasJournalAccess: true,
+            hasStrategiesAccess: true,
+            hasBotAccess: true,
+            hasAnalyticsAccess: true,
+          });
+          loadUsers();
+          showModal(
+            'success',
+            'Upgrade Successful!',
+            'User has been upgraded to Pro.\nAll premium features are now enabled.'
+          );
+        } catch (error) {
+          console.error('Error upgrading user:', error);
+          showModal(
+            'error',
+            'Upgrade Failed',
+            `Failed to upgrade user.\n\nError: ${error.message}`
+          );
+        }
+      }
+    );
   };
 
   const handleDowngrade = async (userId) => {
-    if (
-      !confirm(
-        'Downgrade user to Free plan? All premium features will be disabled.'
-      )
-    )
-      return;
-    try {
-      await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
-        plan: 'free',
-        planUpdatedAt: new Date().toISOString(),
-        hasJournalAccess: false,
-        hasStrategiesAccess: false,
-        hasBotAccess: false,
-        hasAnalyticsAccess: false,
-      });
-      loadUsers();
-      alert('User downgraded to Free. All premium features disabled.');
-    } catch (error) {
-      console.error('Error downgrading user:', error);
-      alert('Failed to downgrade user');
-    }
+    showConfirm(
+      'Downgrade to Free',
+      'Are you sure you want to downgrade this user to Free plan?\n\nAll premium features will be disabled.',
+      async () => {
+        closeModal();
+        try {
+          await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
+            plan: 'free',
+            planUpdatedAt: new Date().toISOString(),
+            hasJournalAccess: false,
+            hasStrategiesAccess: false,
+            hasBotAccess: false,
+            hasAnalyticsAccess: false,
+          });
+          loadUsers();
+          showModal(
+            'success',
+            'Downgrade Successful',
+            'User has been downgraded to Free.\nAll premium features have been disabled.'
+          );
+        } catch (error) {
+          console.error('Error downgrading user:', error);
+          showModal(
+            'error',
+            'Downgrade Failed',
+            `Failed to downgrade user.\n\nError: ${error.message}`
+          );
+        }
+      }
+    );
   };
 
   const handleSyncUsers = async () => {
@@ -106,83 +164,126 @@ const UserManagement = () => {
       if (result.success) {
         await loadUsers();
         if (result.orphansDeleted > 0 || result.missingCreated > 0) {
-          alert(
-            `✅ Sync Complete!\n\n🗑️ Orphans Removed: ${result.orphansDeleted}\n➕ Missing Created: ${result.missingCreated}`
+          showModal(
+            'success',
+            'Sync Complete!',
+            'Users have been synchronized successfully.',
+            {
+              'Orphans Removed': result.orphansDeleted,
+              'Missing Created': result.missingCreated,
+            }
+          );
+        } else {
+          showModal(
+            'success',
+            'Already Synced',
+            'All users are already in sync.\nNo changes were needed.'
           );
         }
       } else {
-        alert(`❌ Sync failed: ${result.error}`);
+        showModal(
+          'error',
+          'Sync Failed',
+          `Failed to sync users.\n\nError: ${result.error}`
+        );
       }
     } catch (err) {
       console.error('Sync error:', err);
-      alert('❌ Sync failed. Check console for details.');
+      showModal(
+        'error',
+        'Sync Failed',
+        `An error occurred during sync.\n\nError: ${err.message}`
+      );
     } finally {
       setSyncing(false);
     }
   };
 
   const handleDeleteUser = async (userId, userEmail) => {
-    if (
-      !confirm(
-        `⚠️ DANGER: Permanently delete user "${userEmail}"?\n\nThis will delete:\n• Their auth account\n• Their database record\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?`
-      )
-    )
-      return;
-    try {
-      console.log('🗑️ Deleting user:', userId);
-      console.log('DELETE_FUNCTION_ID:', DELETE_FUNCTION_ID);
+    showConfirm(
+      '⚠️ Delete User',
+      `Are you absolutely sure you want to delete "${userEmail}"?\n\nThis will permanently delete:\n• Their auth account\n• Their database record\n\nThis action CANNOT be undone!`,
+      async () => {
+        closeModal();
+        try {
+          const execution = await functions.createExecution(
+            DELETE_FUNCTION_ID,
+            JSON.stringify({ userId }),
+            false
+          );
 
-      const execution = await functions.createExecution(
-        DELETE_FUNCTION_ID,
-        JSON.stringify({ userId }),
-        false
-      );
+          const result = JSON.parse(execution.responseBody);
 
-      console.log('Execution response:', execution);
-      console.log('Response body:', execution.responseBody);
-
-      const result = JSON.parse(execution.responseBody);
-      console.log('Parsed result:', result);
-
-      if (result.success) {
-        await loadUsers();
-        alert(
-          '✅ User Completely Deleted!\n\nAuth Account: Deleted ✓\nDatabase Record: Deleted ✓'
-        );
-      } else {
-        const authStatus = result.authDeleted
-          ? 'Deleted ✓'
-          : `Failed - ${result.authError || 'Unknown error'}`;
-        const dbStatus = result.dbDeleted
-          ? 'Deleted ✓'
-          : `Failed - ${result.dbError || 'Unknown error'}`;
-        alert(
-          `⚠️ Partial Deletion\n\nAuth: ${authStatus}\nDatabase: ${dbStatus}`
-        );
-        await loadUsers();
+          if (result.success) {
+            await loadUsers();
+            showModal(
+              'success',
+              'User Deleted',
+              `User "${userEmail}" has been completely removed from the system.`,
+              {
+                'Auth Account': 'Deleted ✓',
+                'Database Record': 'Deleted ✓',
+              }
+            );
+          } else {
+            const authStatus = result.authDeleted
+              ? 'Deleted ✓'
+              : `Failed - ${result.authError || 'Unknown error'}`;
+            const dbStatus = result.dbDeleted
+              ? 'Deleted ✓'
+              : `Failed - ${result.dbError || 'Unknown error'}`;
+            await loadUsers();
+            showModal(
+              'warning',
+              'Partial Deletion',
+              `User deletion completed with some issues.`,
+              {
+                'Auth Account': authStatus,
+                'Database Record': dbStatus,
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Delete error:', error);
+          showModal(
+            'error',
+            'Deletion Failed',
+            `Failed to delete user.\n\nError: ${error.message}`
+          );
+        }
       }
-    } catch (error) {
-      console.error('❌ Delete error:', error);
-      console.error('Error details:', error.message, error.stack);
-      alert(
-        `❌ Failed to delete user.\n\nError: ${error.message}\n\nCheck console for details.`
-      );
-    }
+    );
   };
 
   const handleSuspend = async (userId, currentStatus) => {
     const action = currentStatus === 'suspended' ? 'activate' : 'suspend';
-    if (!confirm(`${action} this user?`)) return;
-    try {
-      await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
-        status: currentStatus === 'suspended' ? 'active' : 'suspended',
-      });
-      loadUsers();
-      alert(`User ${action}ed successfully!`);
-    } catch (error) {
-      console.error(`Error ${action}ing user:`, error);
-      alert(`Failed to ${action} user`);
-    }
+    const actionCap = action.charAt(0).toUpperCase() + action.slice(1);
+
+    showConfirm(
+      `${actionCap} User`,
+      `Are you sure you want to ${action} this user?`,
+      async () => {
+        closeModal();
+        try {
+          await databases.updateDocument(DATABASE_ID, USERS_TABLE_ID, userId, {
+            status: currentStatus === 'suspended' ? 'active' : 'suspended',
+          });
+          loadUsers();
+          showModal(
+            'success',
+            `User ${actionCap}d`,
+            `User has been ${action}ed successfully.`
+          );
+        } catch (error) {
+          console.error(`Error ${action}ing user:`, error);
+          showModal(
+            'error',
+            `${actionCap} Failed`,
+            `Failed to ${action} user.\n\nError: ${error.message}`
+          );
+        }
+      }
+    );
   };
 
   const filteredUsers = users.filter((user) => {
@@ -366,6 +467,17 @@ const UserManagement = () => {
           </tbody>
         </table>
       </div>
+
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        details={modal.details}
+        onConfirm={modal.onConfirm}
+        confirmText={modal.type === 'confirm' ? 'Ok' : undefined}
+      />
     </div>
   );
 };
