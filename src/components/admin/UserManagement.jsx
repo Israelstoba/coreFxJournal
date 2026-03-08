@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { databases, functions } from '../../lib/appwrite';
 import { Query } from 'appwrite';
-import { Search, Crown, Shield, Ban, RefreshCw } from 'lucide-react';
+import { Search, Crown, Shield, Ban, Trash2 } from 'lucide-react';
 import Modal from './Modal';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState({
@@ -54,14 +53,22 @@ const UserManagement = () => {
     console.log('🔄 UserManagement mounted - loading users...');
     loadUsers();
 
-    const interval = setInterval(() => {
+    // Auto-refresh every 30 seconds
+    const refreshInterval = setInterval(() => {
       console.log('🔄 Auto-refreshing users...');
       loadUsers();
     }, 30000);
 
+    // Background sync every 5 minutes
+    const syncInterval = setInterval(() => {
+      console.log('🔄 Background sync running...');
+      backgroundSync();
+    }, 300000); // 5 minutes
+
     return () => {
-      console.log('🛑 UserManagement unmounted - clearing interval');
-      clearInterval(interval);
+      console.log('🛑 UserManagement unmounted - clearing intervals');
+      clearInterval(refreshInterval);
+      clearInterval(syncInterval);
     };
   }, []);
 
@@ -73,7 +80,7 @@ const UserManagement = () => {
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
-        USERS_TABLE_ID
+        USERS_TABLE_ID,
       );
       setUsers([...response.documents]);
       console.log(`✅ Loaded ${response.documents.length} users`);
@@ -82,6 +89,31 @@ const UserManagement = () => {
       alert('Failed to load users. Please check your connection.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Background sync - runs silently without UI feedback
+  const backgroundSync = async () => {
+    try {
+      const execution = await functions.createExecution(
+        SYNC_FUNCTION_ID,
+        '',
+        false,
+      );
+      const result = JSON.parse(execution.responseBody);
+      if (
+        result.success &&
+        (result.orphansDeleted > 0 || result.missingCreated > 0)
+      ) {
+        console.log('✅ Background sync completed:', {
+          orphansDeleted: result.orphansDeleted,
+          missingCreated: result.missingCreated,
+        });
+        await loadUsers(); // Refresh list if changes were made
+      }
+    } catch (err) {
+      console.error('❌ Background sync error:', err);
+      // Fail silently - don't interrupt user experience
     }
   };
 
@@ -104,17 +136,17 @@ const UserManagement = () => {
           showModal(
             'success',
             'Upgrade Successful!',
-            'User has been upgraded to Pro.\nAll premium features are now enabled.'
+            'User has been upgraded to Pro.\nAll premium features are now enabled.',
           );
         } catch (error) {
           console.error('Error upgrading user:', error);
           showModal(
             'error',
             'Upgrade Failed',
-            `Failed to upgrade user.\n\nError: ${error.message}`
+            `Failed to upgrade user.\n\nError: ${error.message}`,
           );
         }
-      }
+      },
     );
   };
 
@@ -137,66 +169,18 @@ const UserManagement = () => {
           showModal(
             'success',
             'Downgrade Successful',
-            'User has been downgraded to Free.\nAll premium features have been disabled.'
+            'User has been downgraded to Free.\nAll premium features have been disabled.',
           );
         } catch (error) {
           console.error('Error downgrading user:', error);
           showModal(
             'error',
             'Downgrade Failed',
-            `Failed to downgrade user.\n\nError: ${error.message}`
+            `Failed to downgrade user.\n\nError: ${error.message}`,
           );
         }
-      }
+      },
     );
-  };
-
-  const handleSyncUsers = async () => {
-    setSyncing(true);
-    try {
-      await loadUsers();
-      const execution = await functions.createExecution(
-        SYNC_FUNCTION_ID,
-        '',
-        false
-      );
-      const result = JSON.parse(execution.responseBody);
-      if (result.success) {
-        await loadUsers();
-        if (result.orphansDeleted > 0 || result.missingCreated > 0) {
-          showModal(
-            'success',
-            'Sync Complete!',
-            'Users have been synchronized successfully.',
-            {
-              'Orphans Removed': result.orphansDeleted,
-              'Missing Created': result.missingCreated,
-            }
-          );
-        } else {
-          showModal(
-            'success',
-            'Already Synced',
-            'All users are already in sync.\nNo changes were needed.'
-          );
-        }
-      } else {
-        showModal(
-          'error',
-          'Sync Failed',
-          `Failed to sync users.\n\nError: ${result.error}`
-        );
-      }
-    } catch (err) {
-      console.error('Sync error:', err);
-      showModal(
-        'error',
-        'Sync Failed',
-        `An error occurred during sync.\n\nError: ${err.message}`
-      );
-    } finally {
-      setSyncing(false);
-    }
   };
 
   const handleDeleteUser = async (userId, userEmail) => {
@@ -209,7 +193,7 @@ const UserManagement = () => {
           const execution = await functions.createExecution(
             DELETE_FUNCTION_ID,
             JSON.stringify({ userId }),
-            false
+            false,
           );
 
           const result = JSON.parse(execution.responseBody);
@@ -223,7 +207,7 @@ const UserManagement = () => {
               {
                 'Auth Account': 'Deleted ✓',
                 'Database Record': 'Deleted ✓',
-              }
+              },
             );
           } else {
             const authStatus = result.authDeleted
@@ -240,7 +224,7 @@ const UserManagement = () => {
               {
                 'Auth Account': authStatus,
                 'Database Record': dbStatus,
-              }
+              },
             );
           }
         } catch (error) {
@@ -248,10 +232,10 @@ const UserManagement = () => {
           showModal(
             'error',
             'Deletion Failed',
-            `Failed to delete user.\n\nError: ${error.message}`
+            `Failed to delete user.\n\nError: ${error.message}`,
           );
         }
-      }
+      },
     );
   };
 
@@ -272,17 +256,17 @@ const UserManagement = () => {
           showModal(
             'success',
             `User ${actionCap}d`,
-            `User has been ${action}ed successfully.`
+            `User has been ${action}ed successfully.`,
           );
         } catch (error) {
           console.error(`Error ${action}ing user:`, error);
           showModal(
             'error',
             `${actionCap} Failed`,
-            `Failed to ${action} user.\n\nError: ${error.message}`
+            `Failed to ${action} user.\n\nError: ${error.message}`,
           );
         }
-      }
+      },
     );
   };
 
@@ -305,15 +289,6 @@ const UserManagement = () => {
   return (
     <div className="user-management">
       <div className="controls-bar">
-        <button
-          className="sync-users-btn"
-          onClick={handleSyncUsers}
-          disabled={syncing}
-          title="Sync users between auth and database"
-        >
-          <RefreshCw size={18} className={syncing ? 'spinning' : ''} />
-          {syncing ? 'Syncing...' : 'Sync Users'}
-        </button>
         <div className="search-box">
           <Search size={18} />
           <input
@@ -443,9 +418,7 @@ const UserManagement = () => {
                       </button>
                     )}
                     <button
-                      className={`btn-suspend ${
-                        user.status === 'suspended' ? 'active' : ''
-                      }`}
+                      className={`btn-suspend ${user.status === 'suspended' ? 'active' : ''}`}
                       onClick={() => handleSuspend(user.$id, user.status)}
                       title={
                         user.status === 'suspended' ? 'Activate' : 'Suspend'
@@ -458,7 +431,7 @@ const UserManagement = () => {
                       onClick={() => handleDeleteUser(user.$id, user.email)}
                       title="Delete user completely"
                     >
-                      🗑️
+                      <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>
@@ -476,7 +449,7 @@ const UserManagement = () => {
         type={modal.type}
         details={modal.details}
         onConfirm={modal.onConfirm}
-        confirmText={modal.type === 'confirm' ? 'Ok' : undefined}
+        confirmText={modal.type === 'confirm' ? 'Delete' : undefined}
       />
     </div>
   );
