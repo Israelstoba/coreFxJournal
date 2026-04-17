@@ -40,7 +40,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, error }) => {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) =>
-        item.toLowerCase().includes(searchTerm.toLowerCase())
+        item.toLowerCase().includes(searchTerm.toLowerCase()),
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -439,8 +439,8 @@ const TradeModal = ({
                     parseFloat(form.riskPercent) <= 2
                       ? '#4caf50'
                       : parseFloat(form.riskPercent) <= 5
-                      ? '#f59e0b'
-                      : '#ff4d4d',
+                        ? '#f59e0b'
+                        : '#ff4d4d',
                 }}
                 title={`Risk based on account size: $${accountSize.toLocaleString()}`}
               />
@@ -644,10 +644,18 @@ const JournalDetails = ({
         await onUpdateJournal(selectedJournal.id, { trades });
       } catch (error) {
         console.error('Error syncing trades:', error);
+        alert(
+          'Failed to update journal. Your changes are saved locally but may not sync. Please check your internet connection.',
+        );
       }
     };
 
-    syncTrades();
+    // Debounce sync to avoid rapid-fire updates on mobile
+    const timer = setTimeout(() => {
+      syncTrades();
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [trades]);
 
   const handleSaveTrade = (trade) => {
@@ -656,8 +664,8 @@ const JournalDetails = ({
         prev.map((t) =>
           t.id === editTrade.id
             ? { ...trade, id: editTrade.id, balanceAtEntry: t.balanceAtEntry }
-            : t
-        )
+            : t,
+        ),
       );
     } else {
       const balanceAtEntry = trades.reduce((bal, t) => {
@@ -768,7 +776,7 @@ const JournalDetails = ({
 
   const totalTrades = filteredTrades.length;
   const winningTrades = filteredTrades.filter(
-    (t) => calculatePnL(t) > 0
+    (t) => calculatePnL(t) > 0,
   ).length;
   const losingTrades = filteredTrades.filter((t) => calculatePnL(t) < 0).length;
   const winRate =
@@ -790,7 +798,7 @@ const JournalDetails = ({
     const sorted = [...trades].sort((a, b) =>
       a.date === b.date
         ? (a.time || '').localeCompare(b.time || '')
-        : a.date.localeCompare(b.date)
+        : a.date.localeCompare(b.date),
     );
     sorted.forEach((trade) => {
       const pnlDollars = getRiskDollars(trade) * calculateRR(trade);
@@ -925,7 +933,7 @@ const JournalDetails = ({
             .map(([date, dayTrades]) => {
               const dayPnL = dayTrades.reduce(
                 (sum, t) => sum + calculatePnL(t),
-                0
+                0,
               );
               return (
                 <div
@@ -975,7 +983,7 @@ const JournalDetails = ({
                             {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
-                            }
+                            },
                           )}
                         </span>
                       </div>
@@ -1085,7 +1093,7 @@ const JournalDetails = ({
             const pairTrades = filteredTrades.filter((t) => t.pair === pair);
             const pairPnL = pairTrades.reduce(
               (sum, t) => sum + calculatePnL(t),
-              0
+              0,
             );
             const pairWinRate =
               pairTrades.length > 0
@@ -1115,7 +1123,7 @@ const JournalDetails = ({
                       {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      }
+                      },
                     )}
                   </span>
                 </div>
@@ -1219,7 +1227,7 @@ const JournalDetails = ({
           >
             <option value="all">All Strategies</option>
             {Array.from(
-              new Set(trades.map((t) => t.strategy).filter(Boolean))
+              new Set(trades.map((t) => t.strategy).filter(Boolean)),
             ).map((strategy) => (
               <option key={strategy} value={strategy}>
                 {strategy}
