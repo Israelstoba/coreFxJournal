@@ -83,7 +83,7 @@ export default function Navbar() {
     <>
       <nav className={`navbar ${scrolled ? 'scrolled' : ''}`} role="navigation">
         <Link to="/" className="navbar__logo" onClick={handleLinkClick}>
-          <img src={logo} alt="CoreFx" className="navbar__brand" />
+          <img src={logo} alt="Corepips" className="navbar__brand" />
         </Link>
 
         {/* Hamburger */}
@@ -133,7 +133,7 @@ export default function Navbar() {
               {[
                 { to: '/dashboard', label: 'Dashboard' },
                 { to: '/calculator', label: 'Position Calculator' },
-                { to: '/cfx-flip', label: 'CoreFx Flip' },
+                { to: '/cfx-flip', label: 'Cfx Flip' },
               ].map((item) => (
                 <Link
                   key={item.to}

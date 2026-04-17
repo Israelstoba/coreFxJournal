@@ -148,7 +148,7 @@ const AuthPage = () => {
             {/* <TrendingUp size={36} color="white" /> */}
             <img src={corefxLogo} alt="CoreFx" className="calculator-logo" />
           </div>
-          <h1>CoreFX</h1>
+          {/* <h1>CorepipsFX</h1> */}
           <p>
             {isLogin ? 'Welcome back, trader!' : 'Start your trading journey'}
           </p>
@@ -334,8 +334,8 @@ const AuthPage = () => {
                 {loading
                   ? 'Processing...'
                   : isLogin
-                  ? 'Sign In'
-                  : 'Create Account'}
+                    ? 'Sign In'
+                    : 'Create Account'}
               </button>
 
               {/* Toggle Login/Register */}

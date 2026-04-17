@@ -11,7 +11,9 @@
   z-index: 220;
 
   position: fixed;
-  transition: background-color 0.7s ease, box-shadow 0.3s ease;
+  transition:
+    background-color 0.7s ease,
+    box-shadow 0.3s ease;
   z-index: 220;
   padding: 1rem 7rem;
 
@@ -31,9 +33,10 @@
   .navbar__logo {
     display: flex;
     background-color: $light;
-    border-radius: 50%;
+    border-radius: 8px;
+    padding: 0.2rem 0.5rem;
     .navbar__brand {
-      width: 70px;
+      width: 100px;
 
       &:hover {
         scale: 1.03;
@@ -100,7 +103,9 @@
     opacity: 0;
     transform: translateY(-10px);
     pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
 
     &.open {
       opacity: 1;

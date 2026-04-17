@@ -32,7 +32,9 @@ const Landing = () => {
       {/* Hero Section */}
       <section className="landing-section hero sections">
         <div className="hero-content">
-          <h1 className="big-txt">Master Forex Trading with CoreFx Academy</h1>
+          <h1 className="big-txt">
+            Master Forex Trading with Corepips Academy
+          </h1>
           <p className="small-txt">
             Transform your trading skills with expert-led courses, proven
             strategies, and comprehensive market analysis from industry
@@ -51,13 +53,13 @@ const Landing = () => {
       <section className="about-section">
         <div className="about-grid">
           <div className="about-content">
-            <h2 className="about-title">About CoreFx</h2>
+            <h2 className="about-title">About Corepips</h2>
             <p>
-              At CoreFx Academy, we believe trading success comes not from luck,
-              but from knowledge, discipline, and consistent practice. Our
-              mission is to make forex education accessible to everyone,
-              empowering traders at all levels with the skills and tools they
-              need to thrive.
+              At Corepips forex academy, we believe trading success comes not
+              from luck, but from knowledge, discipline, and consistent
+              practice. Our mission is to make forex education accessible to
+              everyone, empowering traders at all levels with the skills and
+              tools they need to thrive.
             </p>
             <p>
               We offer a structured curriculum that spans from foundational
@@ -87,7 +89,7 @@ const Landing = () => {
           </div>
 
           <div className="about-image">
-            <img src={monitorImg} alt="CoreFx Academy Training" />
+            <img src={monitorImg} alt="Corepips Academy Training" />
           </div>
         </div>
       </section>
@@ -127,7 +129,7 @@ const Landing = () => {
         <h2>Our Mentorship Plans</h2>
         <p className="mentorship-intro">
           Whether you're a beginner taking your first steps in forex trading or
-          an experienced trader seeking consistency, CoreFx has a mentorship
+          an experienced trader seeking consistency, Corepips has a mentorship
           plan tailored for you.
         </p>
         <div className="con-lg">

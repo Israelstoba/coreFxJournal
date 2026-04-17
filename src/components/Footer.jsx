@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="footer__container">
         {/* Brand */}
         <div className="footer__brand">
-          <h2>CoreFx Academy</h2>
+          <h2>Corepips Academy</h2>
           <p>
             Empowering traders worldwide with education, discipline, and
             real-world strategies for lasting success.
@@ -33,7 +33,7 @@ const Footer = () => {
         {/* Contact */}
         <div className="footer__contact">
           <h3>Contact Us</h3>
-          <p>Email: support@corefx.com</p>
+          <p>Email: support@corepipsfx.com</p>
           <p>Phone: +234 703 446 6678</p>
           <div className="footer__socials">
             <a href="https://twitter.com" target="_blank" rel="noreferrer">

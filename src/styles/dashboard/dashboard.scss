@@ -78,7 +78,8 @@
       // padding: 0.3rem;
       border-radius: 50%;
 
-      background-color: $light;
+      // background-color: $light;
+
       img {
         width: 60px; // ✅ reduced logo size
         height: auto;
@@ -135,7 +136,9 @@
         color: #dfe6e9;
         // border-radius: 0.5rem;
         // margin-left: 1rem;
-        transition: background 0.3s ease, color 0.3s ease;
+        transition:
+          background 0.3s ease,
+          color 0.3s ease;
 
         &:hover {
           background: rgba(255, 255, 255, 0.1);

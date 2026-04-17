@@ -196,7 +196,7 @@ const TradeModal = ({
                 <option value="">Select Strategy</option>
                 {(savedStrategies.length > 0
                   ? savedStrategies
-                  : ['Break & Retest', 'Liquidity Grab', 'Trend Continuation']
+                  : ['Break & Retest', 'Supply & Demand', 'Trend Continuation']
                 ).map((s, i) => (
                   <option key={i} value={s}>
                     {s}

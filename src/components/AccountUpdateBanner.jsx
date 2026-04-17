@@ -31,7 +31,7 @@ const AccountUpdateBanner = () => {
       const userDoc = await databases.getDocument(
         DATABASE_ID,
         USERS_TABLE_ID,
-        user.$id
+        user.$id,
       );
 
       // Check if user is missing newly added required fields
