@@ -54,7 +54,7 @@ const Footer = () => {
 
       <div className="footer__bottom">
         <p>
-          © {new Date().getFullYear()} CoreFx Trading Academy. All Rights
+          © {new Date().getFullYear()} Corepips Trading Academy. All Rights
           Reserved.
         </p>
       </div>

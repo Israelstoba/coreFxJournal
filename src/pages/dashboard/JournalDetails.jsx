@@ -12,30 +12,114 @@ import {
   Check,
   Search,
   ChevronDown,
+  ImageIcon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { databases } from '../../lib/appwrite';
-import { Query } from 'appwrite';
+import { databases, storage, ID } from '../../lib/appwrite';
+import { Query, Permission, Role } from 'appwrite';
 
+// ─────────────────────────────────────────────
+// Screenshot helpers (upload / url / delete)
+// ─────────────────────────────────────────────
+const BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID;
+
+// Compress image to max 1200px wide, 75% quality JPEG
+async function compressImage(dataUrl, maxWidth = 1200) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(1, maxWidth / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.src = dataUrl;
+  });
+}
+
+// Convert base64 dataUrl → File object
+function dataUrlToFile(dataUrl, filename = 'screenshot.jpg') {
+  const [header, data] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const binary = atob(data);
+  const arr = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+  return new File([arr], filename, { type: mime });
+}
+
+// Upload image to Appwrite Storage, return file ID
+async function uploadScreenshot(dataUrl, userId) {
+  const compressed = await compressImage(dataUrl);
+  const file = dataUrlToFile(compressed);
+  const result = await storage.createFile(BUCKET_ID, ID.unique(), file, [
+    Permission.read(Role.user(userId)),
+    Permission.update(Role.user(userId)),
+    Permission.delete(Role.user(userId)),
+    Permission.write(Role.user(userId)),
+  ]);
+  return result.$id;
+}
+
+// Build a preview URL from a stored file ID
+function getScreenshotUrl(fileId) {
+  return storage.getFileView(BUCKET_ID, fileId).toString();
+}
+
+// Delete a file from Appwrite Storage (best-effort)
+async function deleteScreenshot(fileId) {
+  try {
+    await storage.deleteFile(BUCKET_ID, fileId);
+  } catch (e) {
+    console.warn('Could not delete old screenshot:', e);
+  }
+}
+
+// ─────────────────────────────────────────────
+// One-time migration: base64 → Appwrite Storage
+// Runs silently when the journal loads.
+// Safe: if a trade fails to migrate it is left as-is.
+// ─────────────────────────────────────────────
+async function migrateTradeScreenshots(trades, userId) {
+  let changed = false;
+  const migrated = await Promise.all(
+    trades.map(async (trade) => {
+      // Already migrated or has no screenshot at all → skip
+      if (!trade.screenshot || trade.screenshotId) return trade;
+
+      try {
+        const fileId = await uploadScreenshot(trade.screenshot, userId);
+        changed = true;
+        // Remove the heavy base64 string, store only the tiny file ID
+        return { ...trade, screenshotId: fileId, screenshot: null };
+      } catch (err) {
+        console.warn(`Migration failed for trade ${trade.id}:`, err);
+        return trade; // leave untouched — never lose data
+      }
+    }),
+  );
+  return { trades: migrated, changed };
+}
+
+// ─────────────────────────────────────────────
 // Searchable Select Component
+// ─────────────────────────────────────────────
 const SearchableSelect = ({ value, onChange, options, placeholder, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter options based on search
   const filteredOptions = options
     .map((group) => ({
       ...group,
@@ -51,15 +135,15 @@ const SearchableSelect = ({ value, onChange, options, placeholder, error }) => {
     setSearchTerm('');
   };
 
-  const selectedLabel = value || placeholder;
-
   return (
     <div className="searchable-select" ref={dropdownRef}>
       <div
         className={`select-trigger ${error ? 'error-field' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={value ? '' : 'placeholder'}>{selectedLabel}</span>
+        <span className={value ? '' : 'placeholder'}>
+          {value || placeholder}
+        </span>
         <ChevronDown size={16} className={`chevron ${isOpen ? 'open' : ''}`} />
       </div>
 
@@ -76,7 +160,6 @@ const SearchableSelect = ({ value, onChange, options, placeholder, error }) => {
               autoFocus
             />
           </div>
-
           <div className="options-list">
             {filteredOptions.length === 0 ? (
               <div className="no-results">No pairs found</div>
@@ -87,9 +170,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder, error }) => {
                   {group.items.map((item) => (
                     <div
                       key={item}
-                      className={`option-item ${
-                        value === item ? 'selected' : ''
-                      }`}
+                      className={`option-item ${value === item ? 'selected' : ''}`}
                       onClick={() => handleSelect(item)}
                     >
                       {item}
@@ -106,15 +187,17 @@ const SearchableSelect = ({ value, onChange, options, placeholder, error }) => {
   );
 };
 
+// ─────────────────────────────────────────────
 // Trade Modal Component
+// ─────────────────────────────────────────────
 const TradeModal = ({
   onClose,
   onSave,
   editData,
   accountSize = 10000,
   userStrategies = [],
+  userId,
 }) => {
-  // Trading pairs organized by category
   const tradingPairs = [
     {
       label: 'Forex Majors',
@@ -184,20 +267,25 @@ const TradeModal = ({
     session: '',
     strategy: '',
     entryReason: '',
+    // screenshot      → legacy base64 field (kept for backward compat, read-only after migration)
+    // screenshotId    → new Appwrite Storage file ID
     screenshot: null,
+    screenshotId: null,
     errors: {},
   });
 
+  // Track upload state separately so it doesn't pollute trade data
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+
   useEffect(() => {
     if (editData) {
-      setForm({ ...editData });
+      setForm({ ...editData, errors: {} });
     }
   }, [editData]);
 
-  // Auto-calculate risk percent when relevant fields change
+  // Auto-calculate risk percent
   useEffect(() => {
-    const calculatedRisk = calculateRiskPercent();
-    setForm((prev) => ({ ...prev, riskPercent: calculatedRisk }));
+    setForm((prev) => ({ ...prev, riskPercent: calculateRiskPercent() }));
   }, [form.entry, form.sl, form.lotSize, form.pair]);
 
   const handleChange = (e) => {
@@ -209,18 +297,50 @@ const TradeModal = ({
     });
   };
 
-  const handleFileChange = (e) => {
+  // ── NEW handleFileChange: uploads to Appwrite Storage ──
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    setUploadingScreenshot(true);
+    try {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm((prev) => ({ ...prev, screenshot: reader.result }));
+      reader.onloadend = async () => {
+        try {
+          // If editing a trade that already has a stored file, delete the old one first
+          if (form.screenshotId) {
+            await deleteScreenshot(form.screenshotId);
+          }
+          const fileId = await uploadScreenshot(reader.result, userId);
+          setForm((prev) => ({
+            ...prev,
+            screenshotId: fileId,
+            screenshot: null, // clear any legacy base64
+          }));
+        } catch (err) {
+          console.error('Screenshot upload failed:', err);
+          alert('Failed to upload screenshot. Please try again.');
+        } finally {
+          setUploadingScreenshot(false);
+        }
       };
       reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('File read error:', err);
+      setUploadingScreenshot(false);
     }
   };
 
-  // Pip size: price movement that equals 1 pip for the instrument
+  // Remove screenshot (delete from Storage if it's a stored file)
+  const handleRemoveScreenshot = async () => {
+    if (form.screenshotId) {
+      await deleteScreenshot(form.screenshotId);
+    }
+    setForm((prev) => ({ ...prev, screenshot: null, screenshotId: null }));
+    const input = document.getElementById('screenshot-upload');
+    if (input) input.value = '';
+  };
+
   const getPipSize = (pair) => {
     if (pair.includes('JPY')) return 0.01;
     if (pair.includes('XAU') || pair.includes('GOLD')) return 0.1;
@@ -242,9 +362,8 @@ const TradeModal = ({
     return 0.0001;
   };
 
-  // Pip value: dollar value of 1 pip per standard lot
   const getPipValue = (pair) => {
-    if (pair.includes('JPY')) return 1000 / 150; // ~6.67, approximated; matches calculator
+    if (pair.includes('JPY')) return 1000 / 150;
     if (pair.includes('XAU') || pair.includes('GOLD')) return 1;
     if (pair.includes('XAG')) return 0.1;
     if (
@@ -264,31 +383,28 @@ const TradeModal = ({
     return 10;
   };
 
-  // Auto-calculate risk percent based on actual account size
   const calculateRiskPercent = () => {
     const { entry, sl, lotSize, pair } = form;
-
     if (!entry || !sl || !lotSize || !pair) return '0.00';
-
     const entryPrice = parseFloat(entry);
     const slPrice = parseFloat(sl);
     const lots = parseFloat(lotSize);
-
     if (entryPrice === 0 || lots === 0) return '0.00';
-
     const pipSize = getPipSize(pair);
     const pipValue = getPipValue(pair);
     const slPips = Math.abs(entryPrice - slPrice) / pipSize;
     const riskDollars = slPips * pipValue * lots;
-    const riskPercent = (riskDollars / accountSize) * 100;
-
-    return riskPercent.toFixed(2);
+    return ((riskDollars / accountSize) * 100).toFixed(2);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate ALL fields as required
+    if (uploadingScreenshot) {
+      alert('Screenshot is still uploading. Please wait a moment.');
+      return;
+    }
+
     const errors = {};
     if (!form.date) errors.date = true;
     if (!form.time) errors.time = true;
@@ -308,10 +424,14 @@ const TradeModal = ({
       return;
     }
 
-    // Clear errors and save
     const { errors: _, ...tradeData } = form;
     onSave({ ...tradeData, id: editData?.id || Date.now() });
   };
+
+  // Determine the preview src: new Storage file takes priority, fallback to legacy base64
+  const previewSrc = form.screenshotId
+    ? getScreenshotUrl(form.screenshotId)
+    : form.screenshot || null;
 
   return (
     <div className="modal-overlay">
@@ -468,7 +588,6 @@ const TradeModal = ({
                 className={form.errors?.strategy ? 'error-field' : ''}
               >
                 <option value="">Select Strategy *</option>
-                {/* User's custom strategies */}
                 {userStrategies.length > 0 && (
                   <>
                     <optgroup label="My Strategies">
@@ -489,7 +608,6 @@ const TradeModal = ({
                     </optgroup>
                   </>
                 )}
-                {/* Show defaults only if no custom strategies */}
                 {userStrategies.length === 0 && (
                   <>
                     <option value="Break & Retest">Break & Retest</option>
@@ -522,25 +640,41 @@ const TradeModal = ({
               accept="image/*"
               onChange={handleFileChange}
               id="screenshot-upload"
+              disabled={uploadingScreenshot}
             />
-            {form.screenshot && (
+
+            {/* Upload in progress indicator */}
+            {uploadingScreenshot && (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'var(--color-text-secondary)',
+                  marginTop: 6,
+                }}
+              >
+                <ImageIcon
+                  size={14}
+                  style={{ marginRight: 4, verticalAlign: 'middle' }}
+                />
+                Uploading screenshot...
+              </p>
+            )}
+
+            {/* Preview: works for both new Storage files AND legacy base64 */}
+            {!uploadingScreenshot && previewSrc && (
               <div className="screenshot-preview-container">
                 <img
-                  src={form.screenshot}
+                  src={previewSrc}
                   alt="Trade screenshot"
                   className="screenshot-preview"
                 />
                 <button
                   type="button"
                   className="delete-screenshot-btn"
-                  onClick={() => {
-                    setForm((prev) => ({ ...prev, screenshot: null }));
-                    document.getElementById('screenshot-upload').value = '';
-                  }}
+                  onClick={handleRemoveScreenshot}
                   title="Remove screenshot"
                 >
                   <Trash2 size={16} />
-                  {/* Delete Image */}
                 </button>
               </div>
             )}
@@ -550,7 +684,11 @@ const TradeModal = ({
             <button type="button" className="cancel-btn" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="save-btn">
+            <button
+              type="submit"
+              className="save-btn"
+              disabled={uploadingScreenshot}
+            >
               {editData ? 'Update Trade' : 'Save Trade'}
             </button>
           </div>
@@ -560,10 +698,11 @@ const TradeModal = ({
   );
 };
 
+// ─────────────────────────────────────────────
 // Screenshot Modal Component
+// ─────────────────────────────────────────────
 const ScreenshotModal = ({ screenshot, onClose }) => {
   if (!screenshot) return null;
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="screenshot-modal" onClick={(e) => e.stopPropagation()}>
@@ -581,7 +720,9 @@ const ScreenshotModal = ({ screenshot, onClose }) => {
   );
 };
 
+// ─────────────────────────────────────────────
 // Main Journal Details Component
+// ─────────────────────────────────────────────
 const JournalDetails = ({
   selectedJournal,
   onBack,
@@ -596,6 +737,7 @@ const JournalDetails = ({
   const [showScreenshotModal, setShowScreenshotModal] = useState(false);
   const [selectedScreenshot, setSelectedScreenshot] = useState(null);
   const [userStrategies, setUserStrategies] = useState([]);
+  const [migrating, setMigrating] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     pair: 'all',
@@ -608,55 +750,79 @@ const JournalDetails = ({
   const initialBalance =
     selectedJournal.initialBalance || selectedJournal.accountSize;
 
+  // ── Run one-time migration on mount ──
+  // Finds any old base64 screenshots and moves them to Appwrite Storage.
+  // Runs silently — users won't notice anything except the "update failed" error disappears.
+  useEffect(() => {
+    const runMigration = async () => {
+      const hasStaleTrades = trades.some(
+        (t) => t.screenshot && !t.screenshotId,
+      );
+      if (!hasStaleTrades) return;
+
+      setMigrating(true);
+      try {
+        const { trades: migrated, changed } = await migrateTradeScreenshots(
+          trades,
+          user?.$id,
+        );
+        if (changed) {
+          setTrades(migrated); // triggers the sync useEffect below
+        }
+      } catch (err) {
+        console.error('Migration error:', err);
+      } finally {
+        setMigrating(false);
+      }
+    };
+
+    runMigration();
+  }, []); // intentionally runs once on mount only
+
   // Load user strategies from Appwrite
   useEffect(() => {
     const loadUserStrategies = async () => {
       if (!user) return;
-
       try {
         const TABLE_ID = import.meta.env.VITE_APPWRITE_SETTINGS_TABLE_ID;
         const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-
         if (!TABLE_ID || !DATABASE_ID) return;
-
         const response = await databases.listDocuments(DATABASE_ID, TABLE_ID, [
           Query.equal('userId', user.$id),
         ]);
-
         if (response.documents.length > 0) {
-          const strategies = response.documents[0].strategies || [];
-          setUserStrategies(strategies);
+          setUserStrategies(response.documents[0].strategies || []);
         }
       } catch (error) {
         console.error('Error loading strategies:', error);
       }
     };
-
     loadUserStrategies();
   }, [user]);
 
-  // Sync trades to Appwrite whenever they change
+  // Sync trades to Appwrite whenever they change (debounced 1s)
   useEffect(() => {
     const syncTrades = async () => {
       if (trades.length === 0 && selectedJournal.trades?.length === 0) return;
-
       try {
         await onUpdateJournal(selectedJournal.id, { trades });
       } catch (error) {
         console.error('Error syncing trades:', error);
-        alert(
-          'Failed to update journal. Your changes are saved locally but may not sync. Please check your internet connection.',
-        );
+        alert('Failed to update journal. Please try again.');
       }
     };
 
-    // Debounce sync to avoid rapid-fire updates on mobile
-    const timer = setTimeout(() => {
-      syncTrades();
-    }, 1000);
-
+    const timer = setTimeout(syncTrades, 1000);
     return () => clearTimeout(timer);
   }, [trades]);
+
+  // ── Helper: resolve screenshot src for any trade ──
+  // Supports both new (screenshotId) and legacy (screenshot base64) trades
+  const getTradeScreenshotSrc = (trade) => {
+    if (trade.screenshotId) return getScreenshotUrl(trade.screenshotId);
+    if (trade.screenshot) return trade.screenshot;
+    return null;
+  };
 
   const handleSaveTrade = (trade) => {
     if (editTrade) {
@@ -686,21 +852,6 @@ const JournalDetails = ({
     }
   };
 
-  const calculateRR = (trade) => {
-    if (!trade.entry || !trade.sl || (!trade.tp && !trade.exit)) return 0;
-    const entry = parseFloat(trade.entry);
-    const sl = parseFloat(trade.sl);
-    const tpOrExit = trade.exit ? parseFloat(trade.exit) : parseFloat(trade.tp);
-    const isBuy = tpOrExit > entry;
-    const risk = isBuy ? entry - sl : sl - entry;
-    const reward = isBuy ? tpOrExit - entry : entry - tpOrExit;
-    return risk === 0 ? 0 : reward / risk;
-  };
-
-  const calculatePnL = (trade) => {
-    const pnlDollars = getRiskDollars(trade) * calculateRR(trade);
-    return (pnlDollars / initialBalance) * 100;
-  };
   const getPipSize = (pair) => {
     if (!pair) return 0.0001;
     if (pair.includes('JPY')) return 0.01;
@@ -754,9 +905,25 @@ const JournalDetails = ({
     return slPips * pipValue * parseFloat(trade.lotSize);
   };
 
-  const calculatePnLDollars = (trade) => {
-    return getRiskDollars(trade) * calculateRR(trade);
+  const calculateRR = (trade) => {
+    if (!trade.entry || !trade.sl || (!trade.tp && !trade.exit)) return 0;
+    const entry = parseFloat(trade.entry);
+    const sl = parseFloat(trade.sl);
+    const tpOrExit = trade.exit ? parseFloat(trade.exit) : parseFloat(trade.tp);
+    const isBuy = tpOrExit > entry;
+    const risk = isBuy ? entry - sl : sl - entry;
+    const reward = isBuy ? tpOrExit - entry : entry - tpOrExit;
+    return risk === 0 ? 0 : reward / risk;
   };
+
+  const calculatePnL = (trade) => {
+    const pnlDollars = getRiskDollars(trade) * calculateRR(trade);
+    return (pnlDollars / initialBalance) * 100;
+  };
+
+  const calculatePnLDollars = (trade) =>
+    getRiskDollars(trade) * calculateRR(trade);
+
   const filteredTrades = trades.filter((trade) => {
     if (
       filters.search &&
@@ -790,8 +957,6 @@ const JournalDetails = ({
         ).toFixed(2)
       : 0;
 
-  // Calculate current balance
-
   const tradeBalanceMap = React.useMemo(() => {
     const map = {};
     let runningBalance = initialBalance;
@@ -807,11 +972,14 @@ const JournalDetails = ({
     });
     return map;
   }, [trades, initialBalance]);
-  const totalPnLDollars = trades.reduce((sum, trade) => {
-    return sum + getRiskDollars(trade) * calculateRR(trade);
-  }, 0);
+
+  const totalPnLDollars = trades.reduce(
+    (sum, trade) => sum + getRiskDollars(trade) * calculateRR(trade),
+    0,
+  );
   const currentBalance = initialBalance + totalPnLDollars;
 
+  // ── Table View ──
   const renderTableView = () => (
     <div className="trade-table-wrapper glassy-ctr">
       <div className="table-scroll-container">
@@ -836,7 +1004,7 @@ const JournalDetails = ({
           <tbody>
             {filteredTrades.length === 0 ? (
               <tr>
-                <td colSpan="12" className="empty-table">
+                <td colSpan="13" className="empty-table">
                   No trades found
                 </td>
               </tr>
@@ -871,9 +1039,6 @@ const JournalDetails = ({
                         maximumFractionDigits: 2,
                       })}
                     </td>
-                    {/* <td>{trade.strategy || '-'}</td>
-                    <td className="action-btns"> */}
-
                     <td>{trade.strategy || '-'}</td>
                     <td
                       className="reflection-cell"
@@ -916,6 +1081,7 @@ const JournalDetails = ({
     </div>
   );
 
+  // ── Calendar View ──
   const renderCalendarView = () => {
     const tradesByDate = {};
     filteredTrades.forEach((trade) => {
@@ -938,9 +1104,7 @@ const JournalDetails = ({
               return (
                 <div
                   key={date}
-                  className={`calendar-card ${
-                    dayPnL > 0 ? 'profit-day' : 'loss-day'
-                  }`}
+                  className={`calendar-card ${dayPnL > 0 ? 'profit-day' : 'loss-day'}`}
                 >
                   <h4 className="calendar-date">
                     {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
@@ -959,59 +1123,61 @@ const JournalDetails = ({
                     )}
                   </h4>
                   <div
-                    className={`day-pnl ${
-                      dayPnL > 0 ? 'positive' : 'negative'
-                    }`}
+                    className={`day-pnl ${dayPnL > 0 ? 'positive' : 'negative'}`}
                   >
                     {dayPnL > 0 ? '+' : ''}
                     {dayPnL.toFixed(2)}%
                   </div>
-                  {dayTrades.map((trade) => (
-                    <div key={trade.id} className="calendar-trade">
-                      <div className="trade-header">
-                        <span className="trade-pair">{trade.pair}</span>
-                        <span
-                          className={`trade-pnl ${
-                            calculatePnL(trade) > 0 ? 'positive' : 'negative'
-                          }`}
-                        >
-                          {calculatePnL(trade) > 0 ? '+' : ''}
-                          {calculatePnL(trade).toFixed(2)}%{' / '}
-                          {calculatePnLDollars(trade) > 0 ? '+' : ''}$
-                          {calculatePnLDollars(trade).toLocaleString(
-                            undefined,
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            },
-                          )}
-                        </span>
-                      </div>
-                      <div className="trade-info">
-                        {trade.strategy || 'No strategy'} | R:R{' '}
-                        {calculateRR(trade).toFixed(2)}
-                      </div>
-                      {trade.entryReason && (
-                        <div className="trade-reflection">
-                          <strong>Reflection:</strong> {trade.entryReason}
-                        </div>
-                      )}
-                      {trade.screenshot && (
-                        <div className="trade-screenshot">
-                          <img src={trade.screenshot} alt="Trade chart" />
-                          <button
-                            className="view-screenshot-btn"
-                            onClick={() => {
-                              setSelectedScreenshot(trade.screenshot);
-                              setShowScreenshotModal(true);
-                            }}
+                  {dayTrades.map((trade) => {
+                    const screenshotSrc = getTradeScreenshotSrc(trade);
+                    return (
+                      <div key={trade.id} className="calendar-trade">
+                        <div className="trade-header">
+                          <span className="trade-pair">{trade.pair}</span>
+                          <span
+                            className={`trade-pnl ${
+                              calculatePnL(trade) > 0 ? 'positive' : 'negative'
+                            }`}
                           >
-                            View Screenshot
-                          </button>
+                            {calculatePnL(trade) > 0 ? '+' : ''}
+                            {calculatePnL(trade).toFixed(2)}%{' / '}
+                            {calculatePnLDollars(trade) > 0 ? '+' : ''}$
+                            {calculatePnLDollars(trade).toLocaleString(
+                              undefined,
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <div className="trade-info">
+                          {trade.strategy || 'No strategy'} | R:R{' '}
+                          {calculateRR(trade).toFixed(2)}
+                        </div>
+                        {trade.entryReason && (
+                          <div className="trade-reflection">
+                            <strong>Reflection:</strong> {trade.entryReason}
+                          </div>
+                        )}
+                        {/* Works for both Storage files and legacy base64 */}
+                        {screenshotSrc && (
+                          <div className="trade-screenshot">
+                            <img src={screenshotSrc} alt="Trade chart" />
+                            <button
+                              className="view-screenshot-btn"
+                              onClick={() => {
+                                setSelectedScreenshot(screenshotSrc);
+                                setShowScreenshotModal(true);
+                              }}
+                            >
+                              View Screenshot
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })
@@ -1020,6 +1186,7 @@ const JournalDetails = ({
     );
   };
 
+  // ── Analytics View ──
   const renderAnalyticsView = () => (
     <div className="analytics-view">
       <div className="stat-card total-trades">
@@ -1072,9 +1239,7 @@ const JournalDetails = ({
           })}
         </div>
         <div
-          className={`stat-detail ${
-            totalPnLDollars >= 0 ? 'profit-text' : 'loss-text'
-          }`}
+          className={`stat-detail ${totalPnLDollars >= 0 ? 'profit-text' : 'loss-text'}`}
         >
           {totalPnLDollars >= 0 ? '+' : ''}$
           {totalPnLDollars.toLocaleString(undefined, {
@@ -1111,9 +1276,7 @@ const JournalDetails = ({
                     {pairTrades.length} trades • {pairWinRate}% WR
                   </span>
                   <span
-                    className={`pair-pnl ${
-                      pairPnL >= 0 ? 'positive' : 'negative'
-                    }`}
+                    className={`pair-pnl ${pairPnL >= 0 ? 'positive' : 'negative'}`}
                   >
                     {pairPnL > 0 ? '+' : ''}
                     {pairPnL.toFixed(2)}%{' / '}
@@ -1137,14 +1300,29 @@ const JournalDetails = ({
 
   return (
     <div className="journal-details">
+      {/* Silent migration banner — only visible while migrating */}
+      {migrating && (
+        <div
+          style={{
+            background: 'rgba(99,102,241,0.12)',
+            color: 'var(--color-text-secondary)',
+            fontSize: 13,
+            padding: '8px 16px',
+            borderRadius: 8,
+            marginBottom: 12,
+            textAlign: 'center',
+          }}
+        >
+          Optimising your screenshot storage in the background…
+        </div>
+      )}
+
       <div className="journal-header">
         <button className="back-btn" onClick={onBack}>
           <ArrowLeft size={18} />
           Back
         </button>
-
         <h2>{selectedJournal?.title || 'Journal'}</h2>
-
         <button
           className="add-trade-btn"
           onClick={() => {
@@ -1240,7 +1418,6 @@ const JournalDetails = ({
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
             }
-            placeholder="From date"
           />
           <input
             type="date"
@@ -1248,7 +1425,6 @@ const JournalDetails = ({
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
             }
-            placeholder="To date"
           />
         </div>
       </div>
@@ -1267,6 +1443,7 @@ const JournalDetails = ({
           editData={editTrade}
           accountSize={currentBalance}
           userStrategies={userStrategies}
+          userId={user?.$id}
         />
       )}
 
