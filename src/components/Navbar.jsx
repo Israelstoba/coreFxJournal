@@ -133,7 +133,7 @@ export default function Navbar() {
               {[
                 { to: '/dashboard', label: 'Dashboard' },
                 { to: '/calculator', label: 'Position Calculator' },
-                { to: '/cfx-flip', label: 'Cfx Flip' },
+                { to: '/cfx-flip', label: 'Risk Simulator' },
               ].map((item) => (
                 <Link
                   key={item.to}

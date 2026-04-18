@@ -5,7 +5,6 @@ import { Routes, Route } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import DashboardContent from './DashboardContent';
-import AnnouncementsBanner from './AnnouncementsBanner';
 import '@/styles/dashboard/dashboard.scss';
 
 // Import dashboard pages
@@ -26,7 +25,6 @@ const DashboardLayout = () => {
 
       <div className="dashboard-main">
         <Topbar toggleSidebar={toggleSidebar} />
-        <AnnouncementsBanner />
 
         <div className="dashboard-content">
           <Routes>
