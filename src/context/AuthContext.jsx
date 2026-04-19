@@ -5,6 +5,12 @@ import { ID } from 'appwrite';
 
 const AuthContext = createContext();
 
+// ── Session persistence key ───────────────────────────────
+// We store a flag in sessionStorage (NOT localStorage).
+// sessionStorage is cleared automatically when the browser tab/window closes,
+// so users must log in again each new browser session.
+const SESSION_KEY = 'cfx_user_session_active';
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -17,69 +23,75 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is logged in on mount
   useEffect(() => {
     checkUser();
   }, []);
 
   const checkUser = async () => {
     try {
+      // If no session flag in sessionStorage, treat as logged out
+      // even if Appwrite still has a valid session cookie.
+      const sessionActive = sessionStorage.getItem(SESSION_KEY);
+      if (!sessionActive) {
+        // Delete any lingering Appwrite session so it's truly clean
+        try {
+          await account.deleteSession('current');
+        } catch (_) {}
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // Session flag exists — verify with Appwrite
       const currentUser = await account.get();
       setUser(currentUser);
     } catch (error) {
+      // Appwrite session expired or invalid
+      sessionStorage.removeItem(SESSION_KEY);
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // Register new user
+  // ── Register ──────────────────────────────────────────────
   const register = async (email, password, name) => {
     try {
-      // First, check if there's an active session and delete it
       try {
         await account.deleteSession('current');
-      } catch (error) {
-        // No active session, continue
-      }
+      } catch (_) {}
 
-      // Create new account
-      const newUser = await account.create(ID.unique(), email, password, name);
-
-      // Create session (login)
+      await account.create(ID.unique(), email, password, name);
       await account.createEmailPasswordSession(email, password);
-
-      // Get user data
       const currentUser = await account.get();
-      setUser(currentUser);
 
-      // Create user record in Users collection
-      const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-      const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
+      // Mark session active for this browser tab
+      sessionStorage.setItem(SESSION_KEY, 'true');
+      setUser(currentUser);
 
       // Send verification email
       try {
-        const verifyUrl = `${window.location.origin}/verify-email`;
-        await account.createVerification(verifyUrl);
-        console.log('✅ Verification email sent to:', email);
+        await account.createVerification(
+          `${window.location.origin}/verify-email`,
+        );
       } catch (error) {
         console.error('Failed to send verification email:', error);
-        // Don't block registration if email fails
       }
 
-      // Retry mechanism for document creation
-      let retries = 3;
-      let documentCreated = false;
+      // Create user document in DB
+      const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
+      const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
 
-      while (retries > 0 && !documentCreated) {
+      let retries = 3;
+      while (retries > 0) {
         try {
-          const userDoc = await databases.createDocument(
+          await databases.createDocument(
             DATABASE_ID,
             USERS_TABLE_ID,
             currentUser.$id,
             {
               userId: currentUser.$id,
-              email: email,
+              email,
               name: name || 'Unknown',
               plan: 'free',
               status: 'active',
@@ -88,34 +100,20 @@ export const AuthProvider = ({ children }) => {
               hasStrategiesAccess: false,
               hasBotAccess: false,
               hasAnalyticsAccess: false,
-            }
+            },
           );
-          console.log('✅ User document created successfully:', userDoc.$id);
-          documentCreated = true;
+          break;
         } catch (error) {
           retries--;
-          console.error(
-            `❌ Attempt ${3 - retries} failed to create user record:`,
-            error
-          );
-
           if (retries === 0) {
             console.error(
-              '❌ CRITICAL: All retries exhausted. User document not created.'
+              '❌ Failed to create user document after all retries',
             );
-            console.error('Error details:', {
-              code: error.code,
-              message: error.message,
-              type: error.type,
-              userId: currentUser.$id,
-              email: email,
-            });
             alert(
-              '⚠️ Registration completed but profile setup failed. Please try logging in - your profile will be created automatically.'
+              '⚠️ Registration completed but profile setup failed. Please try logging in.',
             );
           } else {
-            // Wait 1 second before retry
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((r) => setTimeout(r, 1000));
           }
         }
       }
@@ -124,27 +122,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login user
+  // ── Login ─────────────────────────────────────────────────
   const login = async (email, password) => {
     try {
-      // Check if there's already an active session
+      // Check for existing Appwrite session
       try {
         const existingUser = await account.get();
         if (existingUser) {
-          // Already logged in, just set the user
+          sessionStorage.setItem(SESSION_KEY, 'true');
           setUser(existingUser);
           return;
         }
-      } catch (error) {
-        // No active session, continue with login
-      }
+      } catch (_) {}
 
-      // Create new session
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get();
+
+      // Mark session active for this browser tab
+      sessionStorage.setItem(SESSION_KEY, 'true');
       setUser(currentUser);
 
-      // Create user record if doesn't exist (for existing users before this feature)
+      // Upsert user document
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
 
@@ -152,28 +150,22 @@ export const AuthProvider = ({ children }) => {
         await databases.getDocument(
           DATABASE_ID,
           USERS_TABLE_ID,
-          currentUser.$id
+          currentUser.$id,
         );
-        // Update last active
         await databases.updateDocument(
           DATABASE_ID,
           USERS_TABLE_ID,
           currentUser.$id,
           {
             lastActive: new Date().toISOString(),
-          }
+          },
         );
       } catch (error) {
-        // User record doesn't exist, create it
         if (error.code === 404) {
-          console.log('⚠️ User document missing, creating now...');
-
           let retries = 3;
-          let documentCreated = false;
-
-          while (retries > 0 && !documentCreated) {
+          while (retries > 0) {
             try {
-              const userDoc = await databases.createDocument(
+              await databases.createDocument(
                 DATABASE_ID,
                 USERS_TABLE_ID,
                 currentUser.$id,
@@ -188,21 +180,12 @@ export const AuthProvider = ({ children }) => {
                   hasStrategiesAccess: false,
                   hasBotAccess: false,
                   hasAnalyticsAccess: false,
-                }
+                },
               );
-              console.log('✅ User document created on login:', userDoc.$id);
-              documentCreated = true;
+              break;
             } catch (createError) {
               retries--;
-              console.error(`❌ Attempt ${3 - retries} failed:`, createError);
-
-              if (retries > 0) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-              } else {
-                console.error(
-                  '❌ Failed to create user document after all retries'
-                );
-              }
+              if (retries > 0) await new Promise((r) => setTimeout(r, 1000));
             }
           }
         }
@@ -212,58 +195,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout user
+  // ── Logout ────────────────────────────────────────────────
   const logout = async () => {
     try {
       await account.deleteSession('current');
-      setUser(null);
-    } catch (error) {
-      throw error;
-    }
+    } catch (_) {}
+    // Always clear the session flag regardless of Appwrite response
+    sessionStorage.removeItem(SESSION_KEY);
+    setUser(null);
   };
 
-  // Update password (when user is logged in)
+  // ── Password helpers ──────────────────────────────────────
   const updatePassword = async (newPassword, oldPassword) => {
-    try {
-      await account.updatePassword(newPassword, oldPassword);
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
+    await account.updatePassword(newPassword, oldPassword);
+    return { success: true };
   };
 
-  // Send password recovery email
   const sendPasswordRecovery = async (email) => {
-    try {
-      // The URL should point to your password reset page
-      const resetUrl = `${window.location.origin}/reset-password`;
-      await account.createRecovery(email, resetUrl);
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
+    const resetUrl = `${window.location.origin}/reset-password`;
+    await account.createRecovery(email, resetUrl);
+    return { success: true };
   };
 
-  // Complete password recovery
   const completePasswordRecovery = async (userId, secret, newPassword) => {
-    try {
-      await account.updateRecovery(userId, secret, newPassword);
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
+    await account.updateRecovery(userId, secret, newPassword);
+    return { success: true };
   };
 
-  // Update user name
   const updateUserName = async (name) => {
-    try {
-      await account.updateName(name);
-      const updatedUser = await account.get();
-      setUser(updatedUser);
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
+    await account.updateName(name);
+    const updatedUser = await account.get();
+    setUser(updatedUser);
+    return { success: true };
   };
 
   const value = {

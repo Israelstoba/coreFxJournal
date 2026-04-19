@@ -19,7 +19,7 @@ import AdminLogin from './components/admin/AdminLogin';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
-// ✅User  Dashboard imports
+// User Dashboard imports
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import Journal from './pages/dashboard/Journal';
 import Playbooks from './pages/dashboard/Playbooks';
@@ -31,7 +31,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 🌍 Public Pages (With Navbar + Footer) */}
+        {/* ── Public pages (with Navbar + Footer) ── */}
         <Route
           path="/"
           element={
@@ -42,7 +42,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/calculator"
           element={
@@ -53,7 +52,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/playbooks"
           element={
@@ -66,7 +64,6 @@ function App() {
             </>
           }
         />
-
         <Route
           path="/cfx-flip"
           element={
@@ -78,43 +75,15 @@ function App() {
           }
         />
 
-        {/* ADMIN DASHBOARD ROUTE */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* 🔐 Auth Page (No Navbar or Footer) */}
+        {/* ── User auth (no Navbar/Footer) ── */}
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* 🔒 ADMIN ROUTES - PROTECTED */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedAdminRoute>
-              <AdminDashboard />
-            </ProtectedAdminRoute>
-          }
-        />
-        <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
-
-        {/* 💼 Dashboard Section (Protected - No Navbar or Footer) */}
-
-        {/* 🔐 Auth Page (No Navbar or Footer) */}
-        <Route path="/auth" element={<AuthPage />} />
-
-        {/* 💼 Dashboard Section (Protected - No Navbar or Footer) */}
+        {/* ── User dashboard (protected by user auth) ── */}
         <Route
           path="/dashboard"
           element={<Navigate to="/dashboard/journal" replace />}
         />
-
-        {/* 🧭 Nested Dashboard Routes - PROTECTED */}
         <Route
           path="/dashboard/*"
           element={
@@ -131,10 +100,30 @@ function App() {
           <Route path="*" element={<Navigate to="journal" replace />} />
         </Route>
 
-        {/* 🎯 Direct shortcut to Journal */}
+        {/* Shortcut */}
         <Route
           path="/journal"
           element={<Navigate to="/dashboard/journal" replace />}
+        />
+
+        {/* ── Admin auth (completely independent from user auth) ── */}
+        {/* /admin and /admin/login both go to the admin login page  */}
+        <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Admin dashboard — protected by ProtectedAdminRoute (NOT ProtectedRoute) */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard />
+            </ProtectedAdminRoute>
+          }
+        />
+        {/* Catch-all admin sub-routes */}
+        <Route
+          path="/admin/*"
+          element={<Navigate to="/admin/login" replace />}
         />
       </Routes>
     </Router>

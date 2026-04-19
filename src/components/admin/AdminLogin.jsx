@@ -1,15 +1,15 @@
+// src/components/admin/AdminLogin.jsx
 import React, { useState } from 'react';
 import { account } from '../../lib/appwrite';
 import { Shield, Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Query } from 'appwrite';
+import { ADMIN_SESSION_KEY } from './ProtectedAdminRoute';
 import './_adminLogin.scss';
+
 const AdminLogin = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -20,33 +20,41 @@ const AdminLogin = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      // Create email session
+      // Always start a fresh session for admin login —
+      // delete any existing session first (user or admin)
+      try {
+        await account.deleteSession('current');
+      } catch (_) {}
+
+      // Create a new email session
       await account.createEmailPasswordSession(
         formData.email,
-        formData.password
+        formData.password,
       );
-
-      // Get current user details
       const user = await account.get();
 
-      // Verify admin role
+      // Verify admin privileges
       const isAdmin = await verifyAdminAccess(user);
 
       if (!isAdmin) {
-        // Delete the session if not admin
-        await account.deleteSession('current');
+        // Not an admin — delete session and show error
+        try {
+          await account.deleteSession('current');
+        } catch (_) {}
         setError('Access denied. Admin privileges required.');
         setLoading(false);
         return;
       }
 
-      // Success - redirect to admin dashboard
-      if (onLoginSuccess) {
-        onLoginSuccess(user);
-      }
+      // ✅ Admin confirmed — set the admin session flag in sessionStorage.
+      // This flag is independent of the user session flag, so logging in
+      // here does NOT affect a regular user session in another tab.
+      sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+
+      if (onLoginSuccess) onLoginSuccess(user);
       navigate('/admin/dashboard');
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('Admin login error:', err);
       if (err.code === 401) {
         setError('Invalid email or password');
       } else {
@@ -58,13 +66,12 @@ const AdminLogin = ({ onLoginSuccess }) => {
   };
 
   const verifyAdminAccess = async (user) => {
-    // Method 1: Check against environment variable whitelist
-    const adminEmails = import.meta.env.VITE_ADMIN_EMAILS?.split(',') || [];
-    if (adminEmails.includes(user.email)) {
-      return true;
-    }
+    // Method 1: Env variable whitelist
+    const adminEmails =
+      import.meta.env.VITE_ADMIN_EMAILS?.split(',').map((e) => e.trim()) || [];
+    if (adminEmails.includes(user.email)) return true;
 
-    // Method 2: Check user document for admin role
+    // Method 2: role field in users collection
     try {
       const { databases } = await import('../../lib/appwrite');
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
@@ -73,7 +80,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
       const userDoc = await databases.listDocuments(
         DATABASE_ID,
         USERS_TABLE_ID,
-        [Query.equal('email', user.email)]
+        [Query.equal('email', user.email)],
       );
 
       if (userDoc.documents.length > 0) {
@@ -87,10 +94,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) setError('');
   };
 
@@ -157,8 +161,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
             >
               {loading ? (
                 <>
-                  <span className="spinner"></span>
-                  Authenticating...
+                  <span className="spinner"></span> Authenticating...
                 </>
               ) : (
                 'Sign In'
