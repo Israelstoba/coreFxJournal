@@ -14,8 +14,9 @@ import { databases } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 
 const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-const ANNOUNCEMENTS_TABLE_ID = import.meta.env
+const ANNOUNCEMENTS_TABLE = import.meta.env
   .VITE_APPWRITE_ANNOUNCEMENTS_TABLE_ID;
+const USERS_TABLE = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
 
 // ── localStorage helpers ──────────────────────────────────
 const getReadIds = (userId) => {
@@ -79,28 +80,61 @@ const getTypeStyles = (type) => {
 
 // ── Notification Bell ─────────────────────────────────────
 const NotificationBell = ({ userId }) => {
-  const [announcements, setAnnouncements] = useState([]);
+  const [announcements, setAnnouncements] = useState([]); // filtered by plan
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userPlan, setUserPlan] = useState('free');
   const [showModal, setShowModal] = useState(false);
 
+  // Fetch user plan once on mount
   useEffect(() => {
-    if (!userId || !ANNOUNCEMENTS_TABLE_ID) return;
+    if (!userId || !USERS_TABLE) return;
+    const fetchPlan = async () => {
+      try {
+        const res = await databases.listDocuments(DATABASE_ID, USERS_TABLE, [
+          Query.equal('userId', userId),
+          Query.limit(1),
+        ]);
+        if (res.documents.length > 0) {
+          setUserPlan(res.documents[0].plan || 'free');
+        }
+      } catch (err) {
+        console.error('Failed to fetch user plan:', err);
+      }
+    };
+    fetchPlan();
+  }, [userId]);
+
+  // Fetch announcements whenever plan is known, then every 5 min
+  useEffect(() => {
+    if (!userId || !ANNOUNCEMENTS_TABLE) return;
     fetchAnnouncements();
     const interval = setInterval(fetchAnnouncements, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [userId]);
+  }, [userId, userPlan]);
 
   const fetchAnnouncements = async () => {
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
-        ANNOUNCEMENTS_TABLE_ID,
+        ANNOUNCEMENTS_TABLE,
         [Query.orderDesc('$createdAt'), Query.limit(50)],
       );
-      const docs = response.documents;
-      setAnnouncements(docs);
+
+      // Filter by plan:
+      // - 'all' audience  → everyone sees it
+      // - 'free' audience → only free users
+      // - 'pro' audience  → only pro users
+      const filtered = response.documents.filter((a) => {
+        if (a.targetAudience === 'all') return true;
+        if (a.targetAudience === 'free') return userPlan === 'free';
+        if (a.targetAudience === 'pro') return userPlan === 'pro';
+        return true;
+      });
+
+      setAnnouncements(filtered);
+
       const readIds = getReadIds(userId);
-      setUnreadCount(docs.filter((a) => !readIds.includes(a.$id)).length);
+      setUnreadCount(filtered.filter((a) => !readIds.includes(a.$id)).length);
     } catch (err) {
       console.error('Failed to fetch announcements:', err);
     }
@@ -108,7 +142,7 @@ const NotificationBell = ({ userId }) => {
 
   const handleOpenModal = () => {
     setShowModal(true);
-    // Mark all current announcements as read — badge turns blue, count stays
+    // Mark all as read
     const allIds = announcements.map((a) => a.$id);
     saveReadIds(userId, allIds);
     setUnreadCount(0);
@@ -117,9 +151,13 @@ const NotificationBell = ({ userId }) => {
   const handleCloseModal = () => setShowModal(false);
 
   const totalCount = announcements.length;
-  const badgeVisible = totalCount > 0;
-  // Red when there are unread messages, blue (#0D3498) once all are read
-  const badgeColor = unreadCount > 0 ? '#ef4444' : '#0D3498';
+  const hasUnread = unreadCount > 0;
+  const badgeVisible = totalCount > 0 || hasUnread;
+
+  // RED  → show unread count only
+  // BLUE → show total count
+  const badgeColor = hasUnread ? '#ef4444' : '#0D3498';
+  const badgeCount = hasUnread ? unreadCount : totalCount;
 
   return (
     <>
@@ -142,7 +180,6 @@ const NotificationBell = ({ userId }) => {
       >
         <Bell size={22} />
 
-        {/* Badge always shows total count, colour signals read/unread state */}
         {badgeVisible && (
           <span
             style={{
@@ -165,7 +202,7 @@ const NotificationBell = ({ userId }) => {
               transition: 'background 0.3s ease',
             }}
           >
-            {totalCount > 99 ? '99+' : totalCount}
+            {badgeCount > 99 ? '99+' : badgeCount}
           </span>
         )}
       </button>
@@ -414,9 +451,7 @@ const Topbar = ({ toggleSidebar }) => {
         className="topbar-right"
         style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
       >
-        {ANNOUNCEMENTS_TABLE_ID && user && (
-          <NotificationBell userId={user.$id} />
-        )}
+        {ANNOUNCEMENTS_TABLE && user && <NotificationBell userId={user.$id} />}
         <span className="username">Hey, {firstName}</span>
         <div className="avatar">{firstName.charAt(0).toUpperCase()}</div>
       </div>

@@ -449,7 +449,7 @@ const UserManagement = () => {
         type={modal.type}
         details={modal.details}
         onConfirm={modal.onConfirm}
-        confirmText={modal.type === 'confirm' ? 'Delete' : undefined}
+        confirmText={modal.type === 'confirm' ? 'Okay' : undefined}
       />
     </div>
   );
