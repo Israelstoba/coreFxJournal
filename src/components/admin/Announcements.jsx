@@ -38,11 +38,10 @@ const Announcements = () => {
         setLoading(false);
         return;
       }
-
       const response = await databases.listDocuments(
         DATABASE_ID,
         ANNOUNCEMENTS_TABLE_ID,
-        [Query.orderDesc('$createdAt')]
+        [Query.orderDesc('$createdAt')],
       );
       setAnnouncements(response.documents);
     } catch (error) {
@@ -54,7 +53,6 @@ const Announcements = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       await databases.createDocument(
         DATABASE_ID,
@@ -66,9 +64,8 @@ const Announcements = () => {
           targetAudience: formData.targetAudience,
           type: formData.type,
           sentBy: 'admin',
-        }
+        },
       );
-
       setFormData({
         title: '',
         message: '',
@@ -88,7 +85,6 @@ const Announcements = () => {
   const handleDelete = async (id) => {
     if (!confirm('Delete this announcement? Users will no longer see it.'))
       return;
-
     try {
       await databases.deleteDocument(DATABASE_ID, ANNOUNCEMENTS_TABLE_ID, id);
       loadAnnouncements();
@@ -125,6 +121,24 @@ const Announcements = () => {
     }
   };
 
+  // Human-readable label for each audience value
+  const audienceLabel = (value) => {
+    switch (value) {
+      case 'all':
+        return '👥 Everyone';
+      case 'free':
+        return '🆓 Free users only (no special access)';
+      case 'privileged':
+        return '⭐ Privileged free users only';
+      case 'free_all':
+        return '🆓⭐ All free plan users (free + privileged)';
+      case 'pro':
+        return '👑 Pro users only';
+      default:
+        return value;
+    }
+  };
+
   if (!ANNOUNCEMENTS_TABLE_ID) {
     return (
       <div className="announcements-setup">
@@ -132,32 +146,27 @@ const Announcements = () => {
         <div className="setup-instructions">
           <h3>Setup Required</h3>
           <p>
-            Create an 'announcements' collection in Appwrite with the following
+            Create an 'announcements' collection in Appwrite with these
             attributes:
           </p>
           <ul>
             <li>
-              <strong>title</strong> - String (required)
+              <strong>title</strong> — String (required)
             </li>
             <li>
-              <strong>message</strong> - String (required)
+              <strong>message</strong> — String (required)
             </li>
             <li>
-              <strong>targetAudience</strong> - String (all, free, pro)
+              <strong>targetAudience</strong> — String. Allowed values:
+              <code> all, free, privileged, free_all, pro</code>
             </li>
             <li>
-              <strong>type</strong> - String (info, warning, success, promotion)
+              <strong>type</strong> — String (info, warning, success, promotion)
             </li>
             <li>
-              <strong>sentBy</strong> - String
+              <strong>sentBy</strong> — String
             </li>
           </ul>
-          <p>
-            <em>
-              Note: Appwrite's built-in $createdAt timestamp will be used
-              automatically.
-            </em>
-          </p>
           <p>Then add the collection ID to your .env file:</p>
           <code>VITE_APPWRITE_ANNOUNCEMENTS_TABLE_ID=your_collection_id</code>
         </div>
@@ -195,7 +204,6 @@ const Announcements = () => {
             </button>
           </div>
 
-          {/* Live Preview */}
           {previewMode && formData.title && formData.message && (
             <div className="announcement-preview">
               <h4>📺 User View Preview:</h4>
@@ -207,8 +215,8 @@ const Announcements = () => {
                   {getIcon(formData.type)}
                 </div>
                 <div className="preview-content">
-                  <h5>{formData.title || 'Your Title Here'}</h5>
-                  <p>{formData.message || 'Your message here...'}</p>
+                  <h5>{formData.title}</h5>
+                  <p>{formData.message}</p>
                 </div>
                 <div className="preview-dismiss">×</div>
               </div>
@@ -251,9 +259,17 @@ const Announcements = () => {
                     setFormData({ ...formData, targetAudience: e.target.value })
                   }
                 >
-                  <option value="all">All Users</option>
-                  <option value="free">Free Users Only</option>
-                  <option value="pro">Pro Users Only</option>
+                  <option value="all">👥 Everyone</option>
+                  <option value="free">
+                    🆓 Free users only (no special access)
+                  </option>
+                  <option value="privileged">
+                    ⭐ Privileged free users only
+                  </option>
+                  <option value="free_all">
+                    🆓⭐ All free plan users (free + privileged)
+                  </option>
+                  <option value="pro">👑 Pro users only</option>
                 </select>
               </div>
 
@@ -273,6 +289,30 @@ const Announcements = () => {
               </div>
             </div>
 
+            {/* Audience description hint */}
+            <div
+              style={{
+                background: 'rgba(59,130,246,0.06)',
+                border: '1px solid rgba(59,130,246,0.2)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                fontSize: '13px',
+                color: '#3b82f6',
+                marginBottom: '16px',
+              }}
+            >
+              {formData.targetAudience === 'all' &&
+                '📣 This will be shown to ALL users regardless of plan.'}
+              {formData.targetAudience === 'free' &&
+                '🆓 Only shown to free users who have NOT been granted any special feature access.'}
+              {formData.targetAudience === 'privileged' &&
+                '⭐ Only shown to free users who have been granted at least one pro feature by an admin.'}
+              {formData.targetAudience === 'free_all' &&
+                '🆓⭐ Shown to all users on the free plan — both regular free and privileged free users. Pro users will NOT see this.'}
+              {formData.targetAudience === 'pro' &&
+                '👑 Only shown to users on the full Pro plan. Privileged free users will NOT see this.'}
+            </div>
+
             <div className="form-actions">
               <button type="button" onClick={() => setShowForm(false)}>
                 Cancel
@@ -280,11 +320,7 @@ const Announcements = () => {
               <button type="submit" className="send-btn">
                 <Send size={16} />
                 Send to{' '}
-                {formData.targetAudience === 'all'
-                  ? 'All Users'
-                  : formData.targetAudience === 'free'
-                  ? 'Free Users'
-                  : 'Pro Users'}
+                {audienceLabel(formData.targetAudience).replace(/^.{2}/, '')}
               </button>
             </div>
           </form>
@@ -297,7 +333,7 @@ const Announcements = () => {
           <p className="stat-number">{announcements.length}</p>
         </div>
         <div className="stat-card">
-          <h4>Active</h4>
+          <h4>Active (last 7 days)</h4>
           <p className="stat-number">
             {
               announcements.filter((a) => {
@@ -349,13 +385,13 @@ const Announcements = () => {
                 <span
                   className={`audience-badge ${announcement.targetAudience}`}
                 >
-                  👥 {announcement.targetAudience}
+                  {audienceLabel(announcement.targetAudience)}
                 </span>
                 <span className={`type-badge ${announcement.type}`}>
                   {announcement.type}
                 </span>
                 <span className="date">
-                  📅 {new Date(announcement.createdAt).toLocaleDateString()}
+                  📅 {new Date(announcement.$createdAt).toLocaleDateString()}
                 </span>
               </div>
             </div>

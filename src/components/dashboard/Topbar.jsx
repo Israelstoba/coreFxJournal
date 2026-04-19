@@ -30,9 +30,41 @@ const getReadIds = (userId) => {
 };
 
 const saveReadIds = (userId, ids) => {
-  const existing = getReadIds(userId);
-  const merged = Array.from(new Set([...existing, ...ids]));
+  const merged = Array.from(new Set([...getReadIds(userId), ...ids]));
   localStorage.setItem(`readAnnouncements_${userId}`, JSON.stringify(merged));
+};
+
+// ── Audience filter ───────────────────────────────────────
+// Determines whether a user should see a given announcement.
+// userPlan:       'free' | 'pro'
+// isPrivileged:   true if free user with at least one pro feature granted
+const shouldSeeAnnouncement = (announcement, userPlan, isPrivileged) => {
+  const audience = announcement.targetAudience;
+
+  switch (audience) {
+    case 'all':
+      // Everyone sees it
+      return true;
+
+    case 'pro':
+      // Full pro plan users only — privileged free users do NOT qualify
+      return userPlan === 'pro';
+
+    case 'free':
+      // Pure free users only — no special access granted
+      return userPlan === 'free' && !isPrivileged;
+
+    case 'privileged':
+      // Free users who have been granted at least one pro feature
+      return userPlan === 'free' && isPrivileged;
+
+    case 'free_all':
+      // All free plan users: both pure free and privileged free
+      return userPlan === 'free';
+
+    default:
+      return true;
+  }
 };
 
 // ── Type helpers ──────────────────────────────────────────
@@ -80,37 +112,50 @@ const getTypeStyles = (type) => {
 
 // ── Notification Bell ─────────────────────────────────────
 const NotificationBell = ({ userId }) => {
-  const [announcements, setAnnouncements] = useState([]); // filtered by plan
+  const [announcements, setAnnouncements] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userPlan, setUserPlan] = useState('free');
+  const [isPrivileged, setIsPrivileged] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Fetch user plan once on mount
+  // ── Fetch user profile (plan + feature flags) once on mount ──
   useEffect(() => {
     if (!userId || !USERS_TABLE) return;
-    const fetchPlan = async () => {
+    const fetchProfile = async () => {
       try {
         const res = await databases.listDocuments(DATABASE_ID, USERS_TABLE, [
           Query.equal('userId', userId),
           Query.limit(1),
         ]);
         if (res.documents.length > 0) {
-          setUserPlan(res.documents[0].plan || 'free');
+          const profile = res.documents[0];
+          const plan = profile.plan || 'free';
+          // A free user is "privileged" if any pro feature has been granted by admin
+          const privileged =
+            plan === 'free' &&
+            !!(
+              profile.hasJournalAccess ||
+              profile.hasStrategiesAccess ||
+              profile.hasBotAccess ||
+              profile.hasAnalyticsAccess
+            );
+          setUserPlan(plan);
+          setIsPrivileged(privileged);
         }
       } catch (err) {
-        console.error('Failed to fetch user plan:', err);
+        console.error('Failed to fetch user profile:', err);
       }
     };
-    fetchPlan();
+    fetchProfile();
   }, [userId]);
 
-  // Fetch announcements whenever plan is known, then every 5 min
+  // ── Fetch & filter announcements whenever profile is ready ──
   useEffect(() => {
     if (!userId || !ANNOUNCEMENTS_TABLE) return;
     fetchAnnouncements();
     const interval = setInterval(fetchAnnouncements, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [userId, userPlan]);
+  }, [userId, userPlan, isPrivileged]);
 
   const fetchAnnouncements = async () => {
     try {
@@ -120,19 +165,12 @@ const NotificationBell = ({ userId }) => {
         [Query.orderDesc('$createdAt'), Query.limit(50)],
       );
 
-      // Filter by plan:
-      // - 'all' audience  → everyone sees it
-      // - 'free' audience → only free users
-      // - 'pro' audience  → only pro users
-      const filtered = response.documents.filter((a) => {
-        if (a.targetAudience === 'all') return true;
-        if (a.targetAudience === 'free') return userPlan === 'free';
-        if (a.targetAudience === 'pro') return userPlan === 'pro';
-        return true;
-      });
+      // Apply audience filter based on this user's plan and privilege status
+      const filtered = response.documents.filter((a) =>
+        shouldSeeAnnouncement(a, userPlan, isPrivileged),
+      );
 
       setAnnouncements(filtered);
-
       const readIds = getReadIds(userId);
       setUnreadCount(filtered.filter((a) => !readIds.includes(a.$id)).length);
     } catch (err) {
@@ -142,9 +180,11 @@ const NotificationBell = ({ userId }) => {
 
   const handleOpenModal = () => {
     setShowModal(true);
-    // Mark all as read
-    const allIds = announcements.map((a) => a.$id);
-    saveReadIds(userId, allIds);
+    // Mark all visible announcements as read
+    saveReadIds(
+      userId,
+      announcements.map((a) => a.$id),
+    );
     setUnreadCount(0);
   };
 
@@ -152,10 +192,10 @@ const NotificationBell = ({ userId }) => {
 
   const totalCount = announcements.length;
   const hasUnread = unreadCount > 0;
-  const badgeVisible = totalCount > 0 || hasUnread;
+  const badgeVisible = totalCount > 0;
 
-  // RED  → show unread count only
-  // BLUE → show total count
+  // RED  → unread count only
+  // BLUE → total count (all read)
   const badgeColor = hasUnread ? '#ef4444' : '#0D3498';
   const badgeCount = hasUnread ? unreadCount : totalCount;
 
@@ -389,7 +429,6 @@ const NotificationBell = ({ userId }) => {
                           </div>
                         </div>
 
-                        {/* Meta row */}
                         <div
                           style={{
                             display: 'flex',
@@ -446,7 +485,6 @@ const Topbar = ({ toggleSidebar }) => {
       <button className="menu-btn" onClick={toggleSidebar}>
         <FaBars />
       </button>
-
       <div
         className="topbar-right"
         style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
