@@ -125,7 +125,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="admin@corefx.com"
+                placeholder="admin@corepipsfx.com"
                 required
                 autoComplete="email"
                 disabled={loading}

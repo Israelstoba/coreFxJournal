@@ -7,10 +7,10 @@ const Footer = () => {
       <div className="footer__container">
         {/* Brand */}
         <div className="footer__brand">
-          <h2>Corepips Academy</h2>
+          <h2>CorepipsFx Academy</h2>
           <p>
             Empowering traders worldwide with education, discipline, and
-            real-world strategies for lasting success.
+            real-world strategies for for long-term success.
           </p>
         </div>
 
@@ -54,8 +54,7 @@ const Footer = () => {
 
       <div className="footer__bottom">
         <p>
-          © {new Date().getFullYear()} Corepips Trading Academy. All Rights
-          Reserved.
+          © {new Date().getFullYear()} CorepipsFx Academy. All Rights Reserved.
         </p>
       </div>
     </footer>
