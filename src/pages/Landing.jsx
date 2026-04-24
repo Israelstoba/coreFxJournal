@@ -523,7 +523,7 @@ const Landing = () => {
 
       {/* Telegram */}
       <a
-        href="https://t.me/corefxtradingacademy"
+        href="https://t.me/corepipsfxacademy"
         target="_blank"
         rel="noopener noreferrer"
         className={`telegram-btn ${showTelegram ? 'show' : ''}`}
