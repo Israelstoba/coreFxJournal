@@ -42,26 +42,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ── Register ──────────────────────────────────────────────
   const register = async (email, password, name) => {
     try {
+      // Clean up any lingering session first
       try {
         await account.deleteSession('current');
       } catch (_) {}
+
+      // 1. Create account
       await account.create(ID.unique(), email, password, name);
+
+      // 2. Create session (log in)
       await account.createEmailPasswordSession(email, password);
+
+      // 3. Get the user object
       const currentUser = await account.get();
+
+      // 4. Mark session active
       sessionStorage.setItem(SESSION_KEY, 'true');
       setUser(currentUser);
 
-      // Send verification email
-      try {
-        await account.createVerification(
-          `${window.location.origin}/verify-email`,
-        );
-      } catch (error) {
-        console.error('Failed to send verification email:', error);
-      }
-
+      // 5. Create user document in DB (do this before verification email)
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
       let retries = 3;
@@ -84,26 +86,38 @@ export const AuthProvider = ({ children }) => {
               hasAnalyticsAccess: false,
             },
           );
-          break;
-        } catch (error) {
+          break; // success — exit retry loop
+        } catch (dbError) {
           retries--;
           if (retries === 0) {
             console.error(
               '❌ Failed to create user document after all retries',
-            );
-            alert(
-              '⚠️ Registration completed but profile setup failed. Please try logging in.',
             );
           } else {
             await new Promise((r) => setTimeout(r, 1000));
           }
         }
       }
+
+      // 6. Send verification email LAST — session is fully established by now
+      //    Small delay ensures Appwrite session cookie is ready
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        await account.createVerification(
+          `${window.location.origin}/verify-email`,
+        );
+        console.log('✅ Verification email sent to', email);
+      } catch (verifyError) {
+        // Log but don't throw — user is registered & logged in.
+        // They can resend from the verify page.
+        console.error('❌ Failed to send verification email:', verifyError);
+      }
     } catch (error) {
       throw error;
     }
   };
 
+  // ── Login ─────────────────────────────────────────────────
   const login = async (email, password) => {
     try {
       try {
@@ -171,6 +185,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ── Logout ────────────────────────────────────────────────
   const logout = async () => {
     try {
       await account.deleteSession('current');
@@ -179,6 +194,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // ── Password helpers ──────────────────────────────────────
   const updatePassword = async (newPassword, oldPassword) => {
     await account.updatePassword(newPassword, oldPassword);
     return { success: true };
@@ -202,13 +218,13 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
-  // ── NEW: Resend verification email ────────────────────────
+  // ── Resend verification email ─────────────────────────────
   const resendVerification = async () => {
     await account.createVerification(`${window.location.origin}/verify-email`);
     return { success: true };
   };
 
-  // ── NEW: Refresh user from Appwrite (to pick up emailVerification: true) ──
+  // ── Refresh user from Appwrite ────────────────────────────
   const refreshUser = async () => {
     try {
       const currentUser = await account.get();
@@ -219,13 +235,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ── NEW: Derived boolean — is this user's email verified? ─
+  // ── Derived: is email verified? ───────────────────────────
   const isEmailVerified = user?.emailVerification ?? false;
 
   const value = {
     user,
     loading,
-    isEmailVerified, // ← NEW
+    isEmailVerified,
     register,
     login,
     logout,
@@ -233,8 +249,8 @@ export const AuthProvider = ({ children }) => {
     sendPasswordRecovery,
     completePasswordRecovery,
     updateUserName,
-    resendVerification, // ← NEW
-    refreshUser, // ← NEW
+    resendVerification,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
