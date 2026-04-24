@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, User, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import corefxLogo from '../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
@@ -40,20 +40,16 @@ const AuthPage = () => {
     if (!isLogin && !formData.name.trim()) {
       newErrors.name = 'Name is required';
     }
-
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
-
-    // Confirm password validation (only for signup)
     if (!isLogin) {
       if (!formData.confirmPassword) {
         newErrors.confirmPassword = 'Please confirm your password';
@@ -74,18 +70,14 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
-        // Login
         await login(formData.email, formData.password);
         navigate('/dashboard/journal');
       } else {
-        // Register
         await register(formData.email, formData.password, formData.name);
-        navigate('/dashboard/journal');
+        navigate('/verify-email');
       }
     } catch (error) {
       console.error('Auth error:', error);
-
-      // Handle specific Appwrite errors
       if (error.code === 401) {
         setServerError('Invalid email or password');
       } else if (error.code === 409) {
@@ -107,7 +99,6 @@ const AuthPage = () => {
       setServerError('Please enter your email address');
       return;
     }
-
     if (!/\S+@\S+\.\S+/.test(forgotEmail)) {
       setServerError('Please enter a valid email address');
       return;
@@ -118,7 +109,7 @@ const AuthPage = () => {
 
     try {
       await sendPasswordRecovery(forgotEmail);
-      setServerError(''); // Clear any errors
+      setServerError('');
       alert('Password reset email sent! Check your inbox.');
       setShowForgotPassword(false);
       setForgotEmail('');
@@ -142,26 +133,20 @@ const AuthPage = () => {
   return (
     <div className="auth-page">
       <div className="auth-container">
-        {/* Header */}
         <div className="auth-header">
           <div className="auth-logo">
-            {/* <TrendingUp size={36} color="white" /> */}
             <img src={corefxLogo} alt="CoreFx" className="calculator-logo" />
           </div>
-          {/* <h1>CorepipsFX</h1> */}
           <p>
             {isLogin ? 'Welcome back, trader!' : 'Start your trading journey'}
           </p>
         </div>
 
-        {/* Form */}
         <div className="auth-form">
-          {/* Server Error Message */}
           {serverError && (
             <div className="auth-server-error">{serverError}</div>
           )}
 
-          {/* Forgot Password Form */}
           {showForgotPassword ? (
             <>
               <div className="auth-field">
@@ -204,7 +189,6 @@ const AuthPage = () => {
             </>
           ) : (
             <>
-              {/* Name field (only for registration) */}
               {!isLogin && (
                 <div className="auth-field">
                   <div className="auth-input-wrapper">
@@ -226,7 +210,6 @@ const AuthPage = () => {
                 </div>
               )}
 
-              {/* Email field */}
               <div className="auth-field">
                 <div className="auth-input-wrapper">
                   <Mail
@@ -246,7 +229,6 @@ const AuthPage = () => {
                 {errors.email && <p className="auth-error">{errors.email}</p>}
               </div>
 
-              {/* Password field */}
               <div className="auth-field password-field">
                 <div className="auth-input-wrapper">
                   <Lock
@@ -275,7 +257,6 @@ const AuthPage = () => {
                 )}
               </div>
 
-              {/* Confirm Password field (only for signup) */}
               {!isLogin && (
                 <div className="auth-field password-field">
                   <div className="auth-input-wrapper">
@@ -310,7 +291,6 @@ const AuthPage = () => {
                 </div>
               )}
 
-              {/* Forgot Password (only for login) */}
               {isLogin && (
                 <div className="auth-forgot">
                   <a
@@ -325,7 +305,6 @@ const AuthPage = () => {
                 </div>
               )}
 
-              {/* Submit Button */}
               <button
                 onClick={handleSubmit}
                 disabled={loading}
@@ -338,7 +317,6 @@ const AuthPage = () => {
                     : 'Create Account'}
               </button>
 
-              {/* Toggle Login/Register */}
               <div className="auth-toggle">
                 <span className="auth-toggle-text">
                   {isLogin
@@ -357,7 +335,6 @@ const AuthPage = () => {
           )}
         </div>
 
-        {/* Footer */}
         <div className="auth-footer">
           <p>
             By continuing, you agree to CoreFX's Terms of Service and Privacy

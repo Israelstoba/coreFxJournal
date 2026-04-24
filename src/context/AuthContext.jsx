@@ -5,17 +5,11 @@ import { ID } from 'appwrite';
 
 const AuthContext = createContext();
 
-// ── Session persistence key ───────────────────────────────
-// We store a flag in sessionStorage (NOT localStorage).
-// sessionStorage is cleared automatically when the browser tab/window closes,
-// so users must log in again each new browser session.
 const SESSION_KEY = 'cfx_user_session_active';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
 
@@ -29,11 +23,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = async () => {
     try {
-      // If no session flag in sessionStorage, treat as logged out
-      // even if Appwrite still has a valid session cookie.
       const sessionActive = sessionStorage.getItem(SESSION_KEY);
       if (!sessionActive) {
-        // Delete any lingering Appwrite session so it's truly clean
         try {
           await account.deleteSession('current');
         } catch (_) {}
@@ -41,12 +32,9 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-
-      // Session flag exists — verify with Appwrite
       const currentUser = await account.get();
       setUser(currentUser);
     } catch (error) {
-      // Appwrite session expired or invalid
       sessionStorage.removeItem(SESSION_KEY);
       setUser(null);
     } finally {
@@ -54,18 +42,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ── Register ──────────────────────────────────────────────
   const register = async (email, password, name) => {
     try {
       try {
         await account.deleteSession('current');
       } catch (_) {}
-
       await account.create(ID.unique(), email, password, name);
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get();
-
-      // Mark session active for this browser tab
       sessionStorage.setItem(SESSION_KEY, 'true');
       setUser(currentUser);
 
@@ -78,10 +62,8 @@ export const AuthProvider = ({ children }) => {
         console.error('Failed to send verification email:', error);
       }
 
-      // Create user document in DB
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
-
       let retries = 3;
       while (retries > 0) {
         try {
@@ -122,10 +104,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ── Login ─────────────────────────────────────────────────
   const login = async (email, password) => {
     try {
-      // Check for existing Appwrite session
       try {
         const existingUser = await account.get();
         if (existingUser) {
@@ -137,15 +117,11 @@ export const AuthProvider = ({ children }) => {
 
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get();
-
-      // Mark session active for this browser tab
       sessionStorage.setItem(SESSION_KEY, 'true');
       setUser(currentUser);
 
-      // Upsert user document
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
-
       try {
         await databases.getDocument(
           DATABASE_ID,
@@ -195,17 +171,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ── Logout ────────────────────────────────────────────────
   const logout = async () => {
     try {
       await account.deleteSession('current');
     } catch (_) {}
-    // Always clear the session flag regardless of Appwrite response
     sessionStorage.removeItem(SESSION_KEY);
     setUser(null);
   };
 
-  // ── Password helpers ──────────────────────────────────────
   const updatePassword = async (newPassword, oldPassword) => {
     await account.updatePassword(newPassword, oldPassword);
     return { success: true };
@@ -229,9 +202,30 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
+  // ── NEW: Resend verification email ────────────────────────
+  const resendVerification = async () => {
+    await account.createVerification(`${window.location.origin}/verify-email`);
+    return { success: true };
+  };
+
+  // ── NEW: Refresh user from Appwrite (to pick up emailVerification: true) ──
+  const refreshUser = async () => {
+    try {
+      const currentUser = await account.get();
+      setUser(currentUser);
+      return currentUser;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // ── NEW: Derived boolean — is this user's email verified? ─
+  const isEmailVerified = user?.emailVerification ?? false;
+
   const value = {
     user,
     loading,
+    isEmailVerified, // ← NEW
     register,
     login,
     logout,
@@ -239,6 +233,8 @@ export const AuthProvider = ({ children }) => {
     sendPasswordRecovery,
     completePasswordRecovery,
     updateUserName,
+    resendVerification, // ← NEW
+    refreshUser, // ← NEW
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

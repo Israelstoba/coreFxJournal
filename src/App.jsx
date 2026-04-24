@@ -19,6 +19,9 @@ import AdminLogin from './components/admin/AdminLogin';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
+// Account creation and email verification imports
+import VerifyEmail from './pages/VerifyEmail';
+
 // User Dashboard imports
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import Journal from './pages/dashboard/Journal';
@@ -78,7 +81,7 @@ function App() {
         {/* ── User auth (no Navbar/Footer) ── */}
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-
+        <Route path="/verify-email" element={<VerifyEmail />} />
         {/* ── User dashboard (protected by user auth) ── */}
         <Route
           path="/dashboard"
