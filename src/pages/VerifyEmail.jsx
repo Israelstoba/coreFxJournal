@@ -19,7 +19,6 @@ const VerifyEmail = () => {
   const userId = searchParams.get('userId');
   const secret = searchParams.get('secret');
 
-  // ── On mount: if URL has userId + secret, complete verification ──
   useEffect(() => {
     if (userId && secret) {
       completeVerification(userId, secret);
@@ -28,39 +27,48 @@ const VerifyEmail = () => {
 
   const completeVerification = async (uid, sec) => {
     setStatus('verifying');
+
+    // Step 1: Call updateVerification — ignore any throw,
+    // Appwrite sometimes throws even on success.
+    let updateError = null;
     try {
       await account.updateVerification(uid, sec);
     } catch (error) {
-      // Appwrite sometimes throws even on success.
-      // We check the actual account status regardless.
-      console.warn(
-        'updateVerification threw (may still have succeeded):',
-        error.message,
-      );
+      console.warn('updateVerification threw:', error.message);
+      updateError = error;
     }
 
-    // Always check real verification status after the call —
-    // this is the source of truth, not whether the call threw.
+    // Step 2: Try to get the current user to confirm verification.
+    // If the user opened the link in a new tab (no session), account.get()
+    // returns 401. In that case we trust updateVerification succeeded
+    // (if it didn't throw a 400) and redirect them to sign in.
     try {
-      const freshUser = await refreshUser();
+      const freshUser = await account.get();
       if (freshUser?.emailVerification) {
+        await refreshUser();
         setStatus('success');
         setTimeout(
           () => navigate('/dashboard/journal', { replace: true }),
           2000,
         );
       } else {
-        // Genuinely failed — not yet verified on Appwrite
+        // Session exists but still not verified — link was invalid/expired
         setStatus('error');
         setMessage(
-          'Verification failed. The link may be invalid or already used.',
+          'This link is invalid or has already been used. Please request a new one.',
         );
       }
-    } catch (refreshError) {
-      setStatus('error');
-      setMessage(
-        'Could not confirm verification status. Please try signing in.',
-      );
+    } catch (sessionError) {
+      // 401 — no active session in this browser tab.
+      // If updateVerification didn't throw a hard error, it worked.
+      if (!updateError || updateError.code === 0) {
+        // Treat as success — send them to sign in
+        setStatus('success');
+        setTimeout(() => navigate('/auth', { replace: true }), 2500);
+      } else {
+        setStatus('error');
+        setMessage('Verification failed. The link may be invalid or expired.');
+      }
     }
   };
 
@@ -90,12 +98,10 @@ const VerifyEmail = () => {
       if (updated?.emailVerification) {
         navigate('/dashboard/journal', { replace: true });
       } else {
-        setMessage(
-          "Your email isn't verified yet. Check your inbox and click the link.",
-        );
+        setMessage('Not verified yet — check your inbox and click the link.');
       }
     } catch (error) {
-      setMessage('Could not check status. Please try again.');
+      navigate('/auth', { replace: true });
     }
   };
 
@@ -112,6 +118,9 @@ const VerifyEmail = () => {
           </div>
           <div className="auth-form verify-body">
             <div className="verify-spinner" />
+            <p className="verify-text" style={{ marginTop: '1rem' }}>
+              Please wait…
+            </p>
           </div>
         </div>
       </div>
@@ -132,7 +141,9 @@ const VerifyEmail = () => {
           <div className="auth-form verify-body">
             <div className="verify-icon verify-icon--success">✓</div>
             <p className="verify-text">
-              Your email has been confirmed. Taking you to the dashboard…
+              Your email has been confirmed.
+              <br />
+              Taking you to sign in…
             </p>
           </div>
         </div>
@@ -140,7 +151,7 @@ const VerifyEmail = () => {
     );
   }
 
-  // ── Error state (genuinely failed) ──
+  // ── Error state ──
   if (status === 'error') {
     return (
       <div className="auth-page">
@@ -154,15 +165,21 @@ const VerifyEmail = () => {
           <div className="auth-form verify-body">
             <div className="verify-icon verify-icon--error">✕</div>
             {message && <div className="auth-server-error">{message}</div>}
-            <button
-              className="auth-submit"
-              onClick={handleResend}
-              disabled={resendCooldown > 0}
-            >
-              {resendCooldown > 0
-                ? `Resend in ${resendCooldown}s`
-                : 'Resend Verification Email'}
-            </button>
+            {user ? (
+              <button
+                className="auth-submit"
+                onClick={handleResend}
+                disabled={resendCooldown > 0}
+              >
+                {resendCooldown > 0
+                  ? `Resend in ${resendCooldown}s`
+                  : 'Resend Verification Email'}
+              </button>
+            ) : (
+              <button className="auth-submit" onClick={() => navigate('/auth')}>
+                Sign in to resend
+              </button>
+            )}
           </div>
           <div className="auth-footer">
             <p>
@@ -176,7 +193,7 @@ const VerifyEmail = () => {
                   cursor: 'pointer',
                 }}
               >
-                Sign out & sign in again
+                Sign in with a different account
               </button>
             </p>
           </div>
@@ -185,7 +202,7 @@ const VerifyEmail = () => {
     );
   }
 
-  // ── Default: waiting state ──
+  // ── Default: waiting state (no userId/secret in URL) ──
   return (
     <div className="auth-page">
       <div className="auth-container verify-container">
@@ -201,7 +218,10 @@ const VerifyEmail = () => {
 
           <p className="verify-text">
             We sent a verification link to{' '}
-            <strong style={{ color: '#4caf50' }}>{user?.email}</strong>.
+            <strong style={{ color: '#4caf50' }}>
+              {user?.email ?? 'your email'}
+            </strong>
+            .
             <br />
             Click the link in the email to activate your account.
           </p>
@@ -226,15 +246,17 @@ const VerifyEmail = () => {
             I've verified — continue
           </button>
 
-          <button
-            className="auth-submit verify-resend-btn"
-            onClick={handleResend}
-            disabled={resendCooldown > 0}
-          >
-            {resendCooldown > 0
-              ? `Resend in ${resendCooldown}s`
-              : 'Resend email'}
-          </button>
+          {user && (
+            <button
+              className="auth-submit verify-resend-btn"
+              onClick={handleResend}
+              disabled={resendCooldown > 0}
+            >
+              {resendCooldown > 0
+                ? `Resend in ${resendCooldown}s`
+                : 'Resend email'}
+            </button>
+          )}
         </div>
 
         <div className="auth-footer">
