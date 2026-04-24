@@ -122,7 +122,7 @@ export default function Navbar() {
               aria-expanded={productOpen}
               aria-controls="products-dropdown"
             >
-              Products ▾
+              Fx tools ▾
             </button>
 
             <div
