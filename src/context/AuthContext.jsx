@@ -5,6 +5,9 @@ import { ID } from 'appwrite';
 
 const AuthContext = createContext();
 
+// ── Use localStorage (not sessionStorage) so it survives navigation ──
+// Appwrite itself stores its session token in localStorage, so our flag
+// must use the same storage to stay in sync across page navigations.
 const SESSION_KEY = 'cfx_user_session_active';
 
 export const useAuth = () => {
@@ -23,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = async () => {
     try {
-      const sessionActive = sessionStorage.getItem(SESSION_KEY);
+      const sessionActive = localStorage.getItem(SESSION_KEY); // ← localStorage
       if (!sessionActive) {
         try {
           await account.deleteSession('current');
@@ -35,8 +38,12 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await account.get();
       setUser(currentUser);
     } catch (error) {
-      sessionStorage.removeItem(SESSION_KEY);
-      setUser(null);
+      // Only wipe the session on a genuine auth failure (401)
+      if (error.code === 401) {
+        localStorage.removeItem(SESSION_KEY); // ← localStorage
+        setUser(null);
+      }
+      // Network blips or other errors: don't wipe session
     } finally {
       setLoading(false);
     }
@@ -59,11 +66,11 @@ export const AuthProvider = ({ children }) => {
       // 3. Get the user object
       const currentUser = await account.get();
 
-      // 4. Mark session active
-      sessionStorage.setItem(SESSION_KEY, 'true');
+      // 4. Mark session active in localStorage
+      localStorage.setItem(SESSION_KEY, 'true'); // ← localStorage
       setUser(currentUser);
 
-      // 5. Create user document in DB (do this before verification email)
+      // 5. Create user document in DB
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
       let retries = 3;
@@ -86,7 +93,7 @@ export const AuthProvider = ({ children }) => {
               hasAnalyticsAccess: false,
             },
           );
-          break; // success — exit retry loop
+          break;
         } catch (dbError) {
           retries--;
           if (retries === 0) {
@@ -99,8 +106,8 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // 6. Send verification email LAST — session is fully established by now
-      //    Small delay ensures Appwrite session cookie is ready
+      // 6. Send verification email LAST — after session + DB are fully ready
+      //    Small delay ensures Appwrite session is fully established
       await new Promise((r) => setTimeout(r, 500));
       try {
         await account.createVerification(
@@ -108,7 +115,7 @@ export const AuthProvider = ({ children }) => {
         );
         console.log('✅ Verification email sent to', email);
       } catch (verifyError) {
-        // Log but don't throw — user is registered & logged in.
+        // Don't throw — user is registered and logged in.
         // They can resend from the verify page.
         console.error('❌ Failed to send verification email:', verifyError);
       }
@@ -123,7 +130,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const existingUser = await account.get();
         if (existingUser) {
-          sessionStorage.setItem(SESSION_KEY, 'true');
+          localStorage.setItem(SESSION_KEY, 'true'); // ← localStorage
           setUser(existingUser);
           return;
         }
@@ -131,7 +138,7 @@ export const AuthProvider = ({ children }) => {
 
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get();
-      sessionStorage.setItem(SESSION_KEY, 'true');
+      localStorage.setItem(SESSION_KEY, 'true'); // ← localStorage
       setUser(currentUser);
 
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
@@ -190,7 +197,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await account.deleteSession('current');
     } catch (_) {}
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY); // ← localStorage
     setUser(null);
   };
 
