@@ -10,7 +10,7 @@ import './VerifyEmail.scss';
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, resendVerification, refreshUser, isEmailVerified } = useAuth();
+  const { user, resendVerification, refreshUser } = useAuth();
 
   const [status, setStatus] = useState('waiting'); // 'waiting' | 'verifying' | 'success' | 'error'
   const [message, setMessage] = useState('');
@@ -26,29 +26,40 @@ const VerifyEmail = () => {
     }
   }, [userId, secret]);
 
-  // ── If user is already verified, send straight to dashboard ──
-  useEffect(() => {
-    if (isEmailVerified && status !== 'verifying') {
-      navigate('/dashboard/journal', { replace: true });
-    }
-  }, [isEmailVerified]);
-
   const completeVerification = async (uid, sec) => {
     setStatus('verifying');
     try {
       await account.updateVerification(uid, sec);
-      // Refresh user so isEmailVerified becomes true in context
-      await refreshUser();
-      setStatus('success');
-      // Give user a moment to see the success message, then redirect
-      setTimeout(() => navigate('/dashboard/journal', { replace: true }), 2000);
     } catch (error) {
-      console.error('Verification error:', error);
+      // Appwrite sometimes throws even on success.
+      // We check the actual account status regardless.
+      console.warn(
+        'updateVerification threw (may still have succeeded):',
+        error.message,
+      );
+    }
+
+    // Always check real verification status after the call —
+    // this is the source of truth, not whether the call threw.
+    try {
+      const freshUser = await refreshUser();
+      if (freshUser?.emailVerification) {
+        setStatus('success');
+        setTimeout(
+          () => navigate('/dashboard/journal', { replace: true }),
+          2000,
+        );
+      } else {
+        // Genuinely failed — not yet verified on Appwrite
+        setStatus('error');
+        setMessage(
+          'Verification failed. The link may be invalid or already used.',
+        );
+      }
+    } catch (refreshError) {
       setStatus('error');
       setMessage(
-        error.message?.includes('expired')
-          ? 'This link has expired. Please request a new one below.'
-          : 'Verification failed. The link may be invalid or already used.',
+        'Could not confirm verification status. Please try signing in.',
       );
     }
   };
@@ -58,7 +69,6 @@ const VerifyEmail = () => {
     try {
       await resendVerification();
       setMessage('Verification email sent! Check your inbox.');
-      // 60-second cooldown to prevent spam
       setResendCooldown(60);
       const timer = setInterval(() => {
         setResendCooldown((prev) => {
@@ -130,7 +140,7 @@ const VerifyEmail = () => {
     );
   }
 
-  // ── Error state ──
+  // ── Error state (genuinely failed) ──
   if (status === 'error') {
     return (
       <div className="auth-page">
