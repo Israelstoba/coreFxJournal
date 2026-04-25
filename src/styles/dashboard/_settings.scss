@@ -301,6 +301,36 @@
     }
   }
 
+  // ── Add these to your existing _settings.scss ──────────────
+
+  .settings-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    input {
+      width: 100%;
+      padding-right: 42px; // make room for the eye button
+    }
+  }
+
+  .settings-eye-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.4);
+    transition: color 0.2s;
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+
   // Responsive - Tablet
   @media (max-width: 768px) {
     padding: 1rem;

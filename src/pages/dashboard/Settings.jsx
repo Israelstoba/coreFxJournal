@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { databases } from '../../lib/appwrite';
 import { Query, ID } from 'appwrite';
 import { FaUser, FaCog, FaPlus, FaTimes, FaSave } from 'react-icons/fa';
+import { Eye, EyeOff } from 'lucide-react';
 import '../../styles/dashboard/_settings.scss';
 
 const Settings = () => {
@@ -12,7 +13,6 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Get Table ID from environment
   const TABLE_ID = import.meta.env.VITE_APPWRITE_SETTINGS_TABLE_ID;
   const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 
@@ -21,29 +21,29 @@ const Settings = () => {
     name: user?.name || '',
     email: user?.email || '',
   });
+
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
 
+  // Password visibility state — one per field
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Trade Settings State
   const [strategies, setStrategies] = useState([]);
   const [newStrategy, setNewStrategy] = useState('');
   const [settingsDocId, setSettingsDocId] = useState(null);
 
-  // Load user settings on mount
   useEffect(() => {
     let isMounted = true;
-
     const initSettings = async () => {
-      if (user && isMounted) {
-        await loadUserSettings();
-      }
+      if (user && isMounted) await loadUserSettings();
     };
-
     initSettings();
-
     return () => {
       isMounted = false;
     };
@@ -52,54 +52,37 @@ const Settings = () => {
   const loadUserSettings = async () => {
     if (!DATABASE_ID || !TABLE_ID) {
       showMessage('error', 'Database configuration missing');
-      console.error('Missing environment variables:', {
-        DATABASE_ID,
-        TABLE_ID,
-      });
       return;
     }
-
     try {
       const response = await databases.listDocuments(DATABASE_ID, TABLE_ID, [
         Query.equal('userId', user.$id),
       ]);
 
       if (response.documents.length > 0) {
-        // Use the first document
         const userSettings = response.documents[0];
         setStrategies(userSettings.strategies || []);
         setSettingsDocId(userSettings.$id);
 
-        // Clean up duplicates if they exist
         if (response.documents.length > 1) {
-          console.log(
-            `Found ${response.documents.length} duplicate settings documents. Cleaning up...`
-          );
-
-          // Delete all duplicates except the first one
           for (let i = 1; i < response.documents.length; i++) {
             try {
               await databases.deleteDocument(
                 DATABASE_ID,
                 TABLE_ID,
-                response.documents[i].$id
+                response.documents[i].$id,
               );
-              console.log(`Deleted duplicate: ${response.documents[i].$id}`);
             } catch (error) {
               console.error(`Error deleting duplicate: ${error}`);
             }
           }
         }
       } else {
-        // Create initial settings document only if none exists
         const newSettings = await databases.createDocument(
           DATABASE_ID,
           TABLE_ID,
           ID.unique(),
-          {
-            userId: user.$id,
-            strategies: [],
-          }
+          { userId: user.$id, strategies: [] },
         );
         setSettingsDocId(newSettings.$id);
         showMessage('success', 'Settings initialized');
@@ -115,15 +98,13 @@ const Settings = () => {
     setTimeout(() => setMessage({ type: '', text: '' }), 5000);
   };
 
-  // Profile Handlers
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       showMessage(
         'info',
-        'Profile updates coming soon - contact support to change email'
+        'Profile updates coming soon - contact support to change email',
       );
     } catch (error) {
       showMessage('error', error.message);
@@ -135,33 +116,28 @@ const Settings = () => {
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!passwordData.currentPassword) {
       showMessage('error', 'Current password is required');
       return;
     }
-
     if (!passwordData.newPassword) {
       showMessage('error', 'New password is required');
       return;
     }
-
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       showMessage('error', 'New passwords do not match');
       return;
     }
-
     if (passwordData.newPassword.length < 8) {
       showMessage('error', 'Password must be at least 8 characters');
       return;
     }
 
     setLoading(true);
-
     try {
       await updatePassword(
         passwordData.newPassword,
-        passwordData.currentPassword
+        passwordData.currentPassword,
       );
       showMessage('success', 'Password updated successfully!');
       setPasswordData({
@@ -169,6 +145,10 @@ const Settings = () => {
         newPassword: '',
         confirmPassword: '',
       });
+      // Reset visibility on success
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
     } catch (error) {
       console.error('Password update error:', error);
       if (error.code === 401) {
@@ -181,39 +161,33 @@ const Settings = () => {
     }
   };
 
-  // Strategy Handlers
   const handleAddStrategy = async () => {
     if (!newStrategy.trim()) {
       showMessage('error', 'Strategy name cannot be empty');
       return;
     }
-
     if (strategies.includes(newStrategy.trim())) {
       showMessage('error', 'Strategy already exists');
       return;
     }
-
     if (!settingsDocId) {
       showMessage(
         'error',
-        'Settings not initialized. Please refresh the page.'
+        'Settings not initialized. Please refresh the page.',
       );
       return;
     }
 
     const updatedStrategies = [...strategies, newStrategy.trim()];
     setLoading(true);
-
     try {
       await databases.updateDocument(DATABASE_ID, TABLE_ID, settingsDocId, {
         strategies: updatedStrategies,
       });
-
       setStrategies(updatedStrategies);
       setNewStrategy('');
       showMessage('success', 'Strategy added successfully');
     } catch (error) {
-      console.error('Error adding strategy:', error);
       showMessage('error', `Failed to add strategy: ${error.message}`);
     } finally {
       setLoading(false);
@@ -224,23 +198,19 @@ const Settings = () => {
     if (!settingsDocId) {
       showMessage(
         'error',
-        'Settings not initialized. Please refresh the page.'
+        'Settings not initialized. Please refresh the page.',
       );
       return;
     }
-
     const updatedStrategies = strategies.filter((s) => s !== strategyToRemove);
     setLoading(true);
-
     try {
       await databases.updateDocument(DATABASE_ID, TABLE_ID, settingsDocId, {
         strategies: updatedStrategies,
       });
-
       setStrategies(updatedStrategies);
       showMessage('success', 'Strategy removed successfully');
     } catch (error) {
-      console.error('Error removing strategy:', error);
       showMessage('error', `Failed to remove strategy: ${error.message}`);
     } finally {
       setLoading(false);
@@ -262,14 +232,12 @@ const Settings = () => {
       <div className="settings-container">
         <h1 className="settings-title">Settings</h1>
 
-        {/* Message Alert */}
         {message.text && (
           <div className={`settings-message ${message.type}`}>
             {message.text}
           </div>
         )}
 
-        {/* Tabs */}
         <div className="settings-tabs">
           <button
             className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
@@ -285,14 +253,12 @@ const Settings = () => {
           </button>
         </div>
 
-        {/* Tab Content */}
         <div className="settings-content">
           {/* PROFILE TAB */}
           {activeTab === 'profile' && (
             <div className="tab-panel">
               <h2>Profile Information</h2>
 
-              {/* Display User Info */}
               <div className="profile-info">
                 <div className="info-group">
                   <label>Full Name</label>
@@ -319,53 +285,95 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Change Password Section */}
+              {/* Change Password */}
               <div className="password-section">
                 <h3>Change Password</h3>
                 <form onSubmit={handlePasswordUpdate}>
+                  {/* Current Password */}
                   <div className="info-group">
                     <label>Current Password</label>
-                    <input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          currentPassword: e.target.value,
-                        })
-                      }
-                      placeholder="Enter current password"
-                    />
+                    <div className="settings-input-wrapper">
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        value={passwordData.currentPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            currentPassword: e.target.value,
+                          })
+                        }
+                        placeholder="Enter current password"
+                      />
+                      <button
+                        type="button"
+                        className="settings-eye-btn"
+                        onClick={() => setShowCurrentPassword((p) => !p)}
+                      >
+                        {showCurrentPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
+                  {/* New Password */}
                   <div className="info-group">
                     <label>New Password</label>
-                    <input
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          newPassword: e.target.value,
-                        })
-                      }
-                      placeholder="Enter new password (min 8 characters)"
-                    />
+                    <div className="settings-input-wrapper">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={passwordData.newPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            newPassword: e.target.value,
+                          })
+                        }
+                        placeholder="Enter new password (min 8 characters)"
+                      />
+                      <button
+                        type="button"
+                        className="settings-eye-btn"
+                        onClick={() => setShowNewPassword((p) => !p)}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
+                  {/* Confirm New Password */}
                   <div className="info-group">
                     <label>Confirm New Password</label>
-                    <input
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={(e) =>
-                        setPasswordData({
-                          ...passwordData,
-                          confirmPassword: e.target.value,
-                        })
-                      }
-                      placeholder="Re-enter new password"
-                    />
+                    <div className="settings-input-wrapper">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={passwordData.confirmPassword}
+                        onChange={(e) =>
+                          setPasswordData({
+                            ...passwordData,
+                            confirmPassword: e.target.value,
+                          })
+                        }
+                        placeholder="Re-enter new password"
+                      />
+                      <button
+                        type="button"
+                        className="settings-eye-btn"
+                        onClick={() => setShowConfirmPassword((p) => !p)}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <button type="submit" className="btn-save" disabled={loading}>
@@ -385,7 +393,6 @@ const Settings = () => {
                 trade journal strategy dropdown for quick selection.
               </p>
 
-              {/* Add Strategy Input */}
               <div className="add-strategy">
                 <input
                   type="text"
@@ -404,7 +411,6 @@ const Settings = () => {
                 </button>
               </div>
 
-              {/* Strategies List */}
               <div className="strategies-list">
                 {strategies.length === 0 ? (
                   <div className="empty-state">
@@ -430,7 +436,6 @@ const Settings = () => {
                 )}
               </div>
 
-              {/* Strategy Count */}
               {strategies.length > 0 && (
                 <div className="strategy-count">
                   <small>
