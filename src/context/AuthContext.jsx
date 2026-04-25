@@ -5,9 +5,6 @@ import { ID } from 'appwrite';
 
 const AuthContext = createContext();
 
-// ── Use localStorage (not sessionStorage) so it survives navigation ──
-// Appwrite itself stores its session token in localStorage, so our flag
-// must use the same storage to stay in sync across page navigations.
 const SESSION_KEY = 'cfx_user_session_active';
 
 export const useAuth = () => {
@@ -26,7 +23,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = async () => {
     try {
-      const sessionActive = localStorage.getItem(SESSION_KEY); // ← localStorage
+      const sessionActive = localStorage.getItem(SESSION_KEY);
       if (!sessionActive) {
         try {
           await account.deleteSession('current');
@@ -38,39 +35,30 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await account.get();
       setUser(currentUser);
     } catch (error) {
-      // Only wipe the session on a genuine auth failure (401)
       if (error.code === 401) {
-        localStorage.removeItem(SESSION_KEY); // ← localStorage
+        localStorage.removeItem(SESSION_KEY);
         setUser(null);
       }
-      // Network blips or other errors: don't wipe session
     } finally {
       setLoading(false);
     }
   };
 
   // ── Register ──────────────────────────────────────────────
+  // No auto-send of verification email — user clicks "Send" on /verify-email
   const register = async (email, password, name) => {
     try {
-      // Clean up any lingering session first
       try {
         await account.deleteSession('current');
       } catch (_) {}
 
-      // 1. Create account
       await account.create(ID.unique(), email, password, name);
-
-      // 2. Create session (log in)
       await account.createEmailPasswordSession(email, password);
-
-      // 3. Get the user object
       const currentUser = await account.get();
 
-      // 4. Mark session active in localStorage
-      localStorage.setItem(SESSION_KEY, 'true'); // ← localStorage
+      localStorage.setItem(SESSION_KEY, 'true');
       setUser(currentUser);
 
-      // 5. Create user document in DB
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
       const USERS_TABLE_ID = import.meta.env.VITE_APPWRITE_USERS_TABLE_ID;
       let retries = 3;
@@ -105,20 +93,6 @@ export const AuthProvider = ({ children }) => {
           }
         }
       }
-
-      // 6. Send verification email LAST — after session + DB are fully ready
-      //    Small delay ensures Appwrite session is fully established
-      await new Promise((r) => setTimeout(r, 500));
-      try {
-        await account.createVerification(
-          `${window.location.origin}/verify-email`,
-        );
-        console.log('✅ Verification email sent to', email);
-      } catch (verifyError) {
-        // Don't throw — user is registered and logged in.
-        // They can resend from the verify page.
-        console.error('❌ Failed to send verification email:', verifyError);
-      }
     } catch (error) {
       throw error;
     }
@@ -130,7 +104,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const existingUser = await account.get();
         if (existingUser) {
-          localStorage.setItem(SESSION_KEY, 'true'); // ← localStorage
+          localStorage.setItem(SESSION_KEY, 'true');
           setUser(existingUser);
           return;
         }
@@ -138,7 +112,7 @@ export const AuthProvider = ({ children }) => {
 
       await account.createEmailPasswordSession(email, password);
       const currentUser = await account.get();
-      localStorage.setItem(SESSION_KEY, 'true'); // ← localStorage
+      localStorage.setItem(SESSION_KEY, 'true');
       setUser(currentUser);
 
       const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
@@ -197,7 +171,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await account.deleteSession('current');
     } catch (_) {}
-    localStorage.removeItem(SESSION_KEY); // ← localStorage
+    localStorage.removeItem(SESSION_KEY);
     setUser(null);
   };
 
@@ -225,7 +199,7 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
-  // ── Resend verification email ─────────────────────────────
+  // ── Send / resend verification email ─────────────────────
   const resendVerification = async () => {
     await account.createVerification(`${window.location.origin}/verify-email`);
     return { success: true };
@@ -242,7 +216,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ── Derived: is email verified? ───────────────────────────
   const isEmailVerified = user?.emailVerification ?? false;
 
   const value = {
