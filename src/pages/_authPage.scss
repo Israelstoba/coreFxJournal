@@ -121,11 +121,11 @@
     padding: 4px;
     display: flex;
     align-items: center;
-    color: #5d5d5d;
+    color: $clr-prim-300;
     transition: color 0.2s;
 
     &:hover {
-      color: #1d1d1d;
+      color: $clr-prim-400;
     }
   }
 }

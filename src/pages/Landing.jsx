@@ -103,6 +103,40 @@ const Landing = () => {
   const winRate = useCounter(85, 1800, statsInView);
   const trades = useCounter(1000, 2400, statsInView);
 
+  // ── Smartsupp live chat ───────────────────────────────────
+  useEffect(() => {
+    // Avoid injecting twice (e.g. React StrictMode double-invoke)
+    if (document.getElementById('smartsupp-script')) return;
+
+    window._smartsupp = window._smartsupp || {};
+    window._smartsupp.key = '38d0132afc9d76d94616f5a0163728477980d4b6';
+
+    window.smartsupp =
+      window.smartsupp ||
+      function () {
+        window.smartsupp._.push(arguments);
+      };
+    window.smartsupp._ = window.smartsupp._ || [];
+
+    const existingScript = document.getElementsByTagName('script')[0];
+    const script = document.createElement('script');
+    script.id = 'smartsupp-script';
+    script.type = 'text/javascript';
+    script.charset = 'utf-8';
+    script.async = true;
+    script.src = 'https://www.smartsuppchat.com/loader.js?';
+    existingScript.parentNode.insertBefore(script, existingScript);
+
+    // Cleanup: remove widget on unmount so it doesn't persist on other pages
+    return () => {
+      const s = document.getElementById('smartsupp-script');
+      if (s) s.remove();
+      // Hide the widget box if Smartsupp added it to the DOM
+      const box = document.getElementById('smartsupp-box');
+      if (box) box.remove();
+    };
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 400);
     window.addEventListener('scroll', handleScroll);
@@ -513,7 +547,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Scroll-to-top */}
+      {/* ── Scroll-to-top ── */}
       <button
         className={`scroll-top-btn ${showScrollTop ? 'show' : ''}`}
         onClick={scrollToTop}
@@ -521,7 +555,7 @@ const Landing = () => {
         <i className="fas fa-arrow-up"></i>
       </button>
 
-      {/* Telegram */}
+      {/* ── Telegram ── */}
       <a
         href="https://t.me/corepipsfxacademy"
         target="_blank"
@@ -530,6 +564,8 @@ const Landing = () => {
       >
         <i className="fab fa-telegram-plane"></i>
       </a>
+
+      {/* Smartsupp is injected via useEffect — no JSX needed here */}
     </>
   );
 };
