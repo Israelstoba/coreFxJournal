@@ -5,6 +5,7 @@ import { Routes, Route } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import DashboardContent from './DashboardContent';
+import PropSimulator from '../../pages/dashboard/PropSimulator';
 import '@/styles/dashboard/dashboard.scss';
 
 // Import dashboard pages
@@ -31,6 +32,7 @@ const DashboardLayout = () => {
             {/* Dashboard pages */}
             <Route path="journal" element={<Journal />} />
             <Route path="journal/:id" element={<JournalDetails />} />
+            <Route path="simulator" element={<PropSimulator />} />
             <Route path="playbooks" element={<Playbooks />} />
             <Route path="bots" element={<CfxBot />} />
             <Route path="settings" element={<Settings />} />

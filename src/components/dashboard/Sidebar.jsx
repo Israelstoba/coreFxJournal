@@ -13,6 +13,7 @@ import {
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import logo from '@/assets/cfx_logo.png';
+import { FaShieldAlt } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
@@ -97,6 +98,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           </Link>
 
+          <Link to="/dashboard/simulator" onClick={handleLinkClick}>
+            <li
+              className={`sidebar-list-items ${isActive('/dashboard/simulator') ? 'active' : ''}`}
+            >
+              <FaShieldAlt className="icon" />
+              {isOpen && <span>Prop Sim</span>}
+            </li>
+          </Link>
           <Link to="/dashboard/playbooks" onClick={handleLinkClick}>
             <li
               className={`sidebar-list-items ${
@@ -107,7 +116,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen && <span>Playbooks</span>}
             </li>
           </Link>
-
           <Link to="/dashboard/bots" onClick={handleLinkClick}>
             <li
               className={`sidebar-list-items ${
@@ -118,7 +126,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen && <span>CFX Bots</span>}
             </li>
           </Link>
-
           <Link to="/dashboard/settings" onClick={handleLinkClick}>
             <li
               className={`sidebar-list-items ${
@@ -129,7 +136,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen && <span>Settings</span>}
             </li>
           </Link>
-
           <Link to="/dashboard/profile" onClick={handleLinkClick}>
             <li
               className={`sidebar-list-items ${
