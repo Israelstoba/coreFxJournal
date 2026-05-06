@@ -6,7 +6,8 @@ const API_KEY = 'demo'; // Alpha Vantage FX
 const COINGECKO_URL =
   'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd';
 const METALS_API_URL =
-  'https://metals-api.com/api/latest?access_key=YOUR_KEY&base=USD&symbols=XAU,XAG';
+  'https://metals-api.com/api/latest?access_key=YOUR_KEY&base=USD&symbols=XAU,XAG,XPT,XPD';
+const USOIL_URL = 'https://yahoo-finance-api.vercel.app/quote?symbols=CL%3DF';
 
 const Calculator = () => {
   const [balance, setBalance] = useState('');
@@ -25,11 +26,14 @@ const Calculator = () => {
   const [us30Rate, setUs30Rate] = useState(null);
   const [nas100Rate, setNas100Rate] = useState(null);
   const [spx500Rate, setSpx500Rate] = useState(null);
+  const [xptUsdRate, setXptUsdRate] = useState(null);
+  const [xpdUsdRate, setXpdUsdRate] = useState(null);
+  const [usoilRate, setUsoilRate] = useState(null);
 
   useEffect(() => {
     // FX USD/JPY
     fetch(
-      `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=${API_KEY}`
+      `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=JPY&apikey=${API_KEY}`,
     )
       .then((res) => res.json())
       .then((data) => {
@@ -39,14 +43,24 @@ const Calculator = () => {
       })
       .catch(console.error);
 
-    // Metals (XAU, XAG)
+    // Metals (XAU, XAG, XPT, XPD)
     fetch(METALS_API_URL)
       .then((res) => res.json())
       .then((data) => {
         if (data?.rates) {
           setXauUsdRate(data.rates.XAU);
           setXagUsdRate(data.rates.XAG);
+          setXptUsdRate(data.rates.XPT);
+          setXpdUsdRate(data.rates.XPD);
         }
+      })
+      .catch(console.error);
+
+    // USOIL (WTI Crude)
+    fetch(USOIL_URL)
+      .then((res) => res.json())
+      .then((data) => {
+        setUsoilRate(data['CL=F']?.regularMarketPrice || null);
       })
       .catch(console.error);
 
@@ -68,11 +82,20 @@ const Calculator = () => {
   }, []);
 
   const getPipValue = (symbol) => {
+    // JPY pairs: pip = 0.01, standard lot = 100,000 units
     if (symbol.includes('JPY')) return 1000 / usdJpyRate;
-    if (symbol === 'XAU/USD') return 1;
-    if (symbol === 'XAG/USD') return 0.1;
+    // Metals
+    if (symbol === 'XAU/USD') return 1; // Gold: $1 per pip per oz, std lot = 100oz
+    if (symbol === 'XAG/USD') return 0.1; // Silver
+    if (symbol === 'XPT/USD') return 1; // Platinum
+    if (symbol === 'XPD/USD') return 1; // Palladium
+    // Energy
+    if (symbol === 'USOIL') return 1; // WTI Crude: $1 per pip per barrel
+    // Crypto
     if (symbol === 'BTC/USD') return 1;
+    // Indices
     if (['US30', 'NAS100', 'SPX500'].includes(symbol)) return 1;
+    // Standard forex pairs (USD as quote or converted)
     return 10;
   };
 
@@ -86,7 +109,10 @@ const Calculator = () => {
     const specialInstruments = [
       'XAU/USD',
       'XAG/USD',
+      'XPT/USD',
+      'XPD/USD',
       'BTC/USD',
+      'USOIL',
       'US30',
       'NAS100',
       'SPX500',
@@ -123,8 +149,14 @@ const Calculator = () => {
         return xauUsdRate?.toFixed(2);
       case 'XAG/USD':
         return xagUsdRate?.toFixed(2);
+      case 'XPT/USD':
+        return xptUsdRate?.toFixed(2);
+      case 'XPD/USD':
+        return xpdUsdRate?.toFixed(2);
       case 'BTC/USD':
         return btcUsdRate?.toFixed(2);
+      case 'USOIL':
+        return usoilRate?.toFixed(2);
       case 'US30':
         return us30Rate?.toFixed(2);
       case 'NAS100':
@@ -168,16 +200,44 @@ const Calculator = () => {
               <option>AUD/USD</option>
               <option>NZD/USD</option>
             </optgroup>
-            <optgroup label="Minor Pairs">
+            <optgroup label="EUR Crosses">
               <option>EUR/GBP</option>
               <option>EUR/JPY</option>
+              <option>EUR/AUD</option>
+              <option>EUR/NZD</option>
+              <option>EUR/CAD</option>
+              <option>EUR/CHF</option>
+            </optgroup>
+            <optgroup label="GBP Crosses">
               <option>GBP/JPY</option>
+              <option>GBP/AUD</option>
+              <option>GBP/NZD</option>
+              <option>GBP/CAD</option>
+              <option>GBP/CHF</option>
+            </optgroup>
+            <optgroup label="AUD Crosses">
+              <option>AUD/JPY</option>
+              <option>AUD/NZD</option>
               <option>AUD/CAD</option>
+              <option>AUD/CHF</option>
+            </optgroup>
+            <optgroup label="NZD Crosses">
               <option>NZD/JPY</option>
+              <option>NZD/CAD</option>
+              <option>NZD/CHF</option>
+            </optgroup>
+            <optgroup label="CAD &amp; CHF Crosses">
+              <option>CAD/JPY</option>
+              <option>CHF/JPY</option>
             </optgroup>
             <optgroup label="Metals">
               <option>XAU/USD</option>
               <option>XAG/USD</option>
+              <option>XPT/USD</option>
+              <option>XPD/USD</option>
+            </optgroup>
+            <optgroup label="Energy">
+              <option>USOIL</option>
             </optgroup>
             <optgroup label="Crypto">
               <option>BTC/USD</option>

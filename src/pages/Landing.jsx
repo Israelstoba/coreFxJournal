@@ -51,7 +51,7 @@ const TESTIMONIALS = [
     avatar: 'J',
   },
   {
-    text: 'The mentorship and journal helped me fix my psychology. My win rate improved from 38% to over 60%.',
+    text: 'The mentorship and journal helped me fix my psychology. My win rate improved from 32% to over 61%.',
     name: 'Sarah K.',
     role: 'Part-time Trader',
     avatar: 'S',
