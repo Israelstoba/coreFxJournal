@@ -1,4 +1,3 @@
-// src/components/dashboard/PropSimulator.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FaTrophy,
@@ -15,7 +14,7 @@ import {
   FaBullseye,
   FaFire,
 } from 'react-icons/fa';
-import '../../styles/dashboard/_propsimulator.scss';
+import '@/styles/dashboard/_propsimulator.scss';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAIRS = [
@@ -115,12 +114,12 @@ const MetricCard = ({ label, value, sub, valueClass = '' }) => (
 const PropSimulator = () => {
   // ── Settings state ──
   const [phase, setPhase] = useState(1);
-  const [startBal, setStartBal] = useState(2000);
+  const [startBal, setStartBal] = useState(100000);
   const [profitPct, setProfitPct] = useState(8); // %
   const [maxDD, setMaxDD] = useState(10); // %
   const [dailyLoss, setDailyLoss] = useState(5); // %
-  const [riskPct, setRiskPct] = useState(1); // % per trade
-  const [rrRatio, setRrRatio] = useState(1); // R:R
+  const [riskPct, setRiskPct] = useState(2); // % per trade
+  const [rrRatio, setRrRatio] = useState(3); // R:R
   const [winRate, setWinRate] = useState(50); // % (for projections)
 
   // ── Trade log ──
@@ -255,7 +254,7 @@ const PropSimulator = () => {
       {
         id: Date.now(),
         date: today(),
-        pair: 'GBP/USD',
+        pair: 'XAU/USD',
         session: 'London',
         outcome: 'pending',
         riskPct: null,
@@ -277,12 +276,12 @@ const PropSimulator = () => {
   const resetAll = () => {
     setTrades([]);
     setPhase(1);
-    setStartBal(2000);
+    setStartBal(100000);
     setProfitPct(8);
     setMaxDD(10);
     setDailyLoss(5);
-    setRiskPct(1);
-    setRrRatio(1);
+    setRiskPct(2);
+    setRrRatio(3);
     setWinRate(50);
   };
 
@@ -415,7 +414,7 @@ const PropSimulator = () => {
               />
             </div>
             <div className="ps-field">
-              <label className="ps-label">Reward ratio</label>
+              <label className="ps-label">R:R ratio</label>
               <input
                 className="ps-input ps-input--highlight"
                 type="number"
@@ -655,21 +654,18 @@ const PropSimulator = () => {
                         </select>
                       </td>
                       <td>
-                        <div className="ps-outcome-group">
-                          {['win', 'loss', 'be'].map((o) => (
-                            <button
-                              key={o}
-                              className={`ps-outcome-btn ps-outcome-btn--${o}${t.outcome === o ? ' active' : ''}`}
-                              onClick={() => updateTrade(t.id, 'outcome', o)}
-                            >
-                              {o === 'win'
-                                ? 'Win'
-                                : o === 'loss'
-                                  ? 'Loss'
-                                  : 'BE'}
-                            </button>
-                          ))}
-                        </div>
+                        <select
+                          className={`ps-outcome-select ps-outcome-select--${t.outcome || 'pending'}`}
+                          value={t.outcome || 'pending'}
+                          onChange={(e) =>
+                            updateTrade(t.id, 'outcome', e.target.value)
+                          }
+                        >
+                          <option value="pending">— Select —</option>
+                          <option value="win">Win</option>
+                          <option value="loss">Loss</option>
+                          <option value="be">BE</option>
+                        </select>
                       </td>
                       <td>
                         <input
