@@ -114,12 +114,12 @@ const MetricCard = ({ label, value, sub, valueClass = '' }) => (
 const PropSimulator = () => {
   // ── Settings state ──
   const [phase, setPhase] = useState(1);
-  const [startBal, setStartBal] = useState(100000);
+  const [startBal, setStartBal] = useState(2000);
   const [profitPct, setProfitPct] = useState(8); // %
   const [maxDD, setMaxDD] = useState(10); // %
   const [dailyLoss, setDailyLoss] = useState(5); // %
-  const [riskPct, setRiskPct] = useState(2); // % per trade
-  const [rrRatio, setRrRatio] = useState(3); // R:R
+  const [riskPct, setRiskPct] = useState(1); // % per trade
+  const [rrRatio, setRrRatio] = useState(1); // R:R
   const [winRate, setWinRate] = useState(50); // % (for projections)
 
   // ── Trade log ──
@@ -254,7 +254,7 @@ const PropSimulator = () => {
       {
         id: Date.now(),
         date: today(),
-        pair: 'XAU/USD',
+        pair: 'GBP/USD',
         session: 'London',
         outcome: 'pending',
         riskPct: null,
@@ -276,12 +276,12 @@ const PropSimulator = () => {
   const resetAll = () => {
     setTrades([]);
     setPhase(1);
-    setStartBal(100000);
+    setStartBal(2000);
     setProfitPct(8);
     setMaxDD(10);
     setDailyLoss(5);
-    setRiskPct(2);
-    setRrRatio(3);
+    setRiskPct(1);
+    setRrRatio(1);
     setWinRate(50);
   };
 
@@ -299,8 +299,8 @@ const PropSimulator = () => {
       <div className="ps-page-header">
         <div className="ps-page-header__left">
           <h1 className="ps-page-header__title">
-            <FaShieldAlt className="ps-page-header__icon" />
-            Prop Simulator
+            <FaBullseye className="ps-page-header__icon" />
+            Corepips Prop Simulator
           </h1>
           <p className="ps-page-header__sub">
             Golden Bullet Strategy — size every trade to pass your challenge
@@ -317,7 +317,7 @@ const PropSimulator = () => {
         <div className="ps-card">
           <div className="ps-card__header">
             <FaBullseye className="ps-card__header-icon" />
-            <span>Account Settings</span>
+            <span>Account Info</span>
           </div>
 
           {/* Phase toggle */}

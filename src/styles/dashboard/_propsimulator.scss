@@ -1,4 +1,4 @@
-// src/styles/dashboard/_propsimulator.scss
+@use '@/styles/variables' as *; // ✅ make sure to adjust path if needed
 
 // ─── Theme tokens (matching CoreFX palette from screenshot) ──────────────────
 $green-dark: #1a3d1a;
@@ -99,7 +99,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 // ─── Generic card ─────────────────────────────────────────────────────────────
 .ps-card {
   @include card;
-  padding: 22px 24px;
+  padding: 1rem;
   min-width: 0;
   box-sizing: border-box;
 
@@ -130,7 +130,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 .ps-top-row {
   display: grid;
   grid-template-columns: 360px 1fr;
-  gap: 20px;
+  gap: 0.5rem;
   margin-bottom: 20px;
   min-width: 0;
 
@@ -255,7 +255,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 .ps-divider {
   height: 1px;
   background: $border-light;
-  margin: 14px 0;
+  margin: 0.5rem 0;
 }
 
 // ─── Phase toggle ─────────────────────────────────────────────────────────────
@@ -395,7 +395,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 0.5rem;
 }
 
 .ps-metric {
@@ -583,24 +583,16 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 // ─── Trade log card ───────────────────────────────────────────────────────────
 // overflow:hidden clips the scrollable table so it respects the card border-radius
 .ps-card--log {
-  margin-bottom: 16px;
   overflow: hidden;
   min-width: 0;
+  width: 100%;
   box-sizing: border-box;
-  // Remove default card padding so the table fills edge-to-edge
   padding: 0;
 
-  // Header keeps its own padding
   .ps-card__header {
     padding: 20px 24px 14px;
     border-bottom: 1px solid $border-light;
     margin-bottom: 0;
-  }
-
-  // Table wrapper fills the remaining card width and scrolls horizontally
-  .ps-table-wrap {
-    border-radius: 0 0 16px 16px;
-    border: none;
   }
 }
 
@@ -625,10 +617,11 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 
 // ─── Table wrapper ────────────────────────────────────────────────────────────
 .ps-table-wrap {
+  min-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  border-radius: 10px;
-  border: 1px solid $border-light;
+  border-top: 1px solid $border-light;
 
   &::-webkit-scrollbar {
     height: 4px;
@@ -652,7 +645,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 // ─── Table ────────────────────────────────────────────────────────────────────
 .ps-table {
   width: 100%;
-  min-width: 780px; // forces scroll on small screens instead of squishing
+  min-width: 900px; // forces scroll on small screens instead of squishing
   border-collapse: collapse;
   font-size: 12px;
 

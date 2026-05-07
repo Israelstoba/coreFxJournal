@@ -9,6 +9,7 @@ import {
   FaRobot,
   FaUser,
   FaSignOutAlt,
+  FaBullseye,
 } from 'react-icons/fa';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -102,7 +103,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <li
               className={`sidebar-list-items ${isActive('/dashboard/simulator') ? 'active' : ''}`}
             >
-              <FaShieldAlt className="icon" />
+              {/* <FaShieldAlt className="icon" /> */}
+              <FaBullseye className="icon" />
               {isOpen && <span>Prop Sim</span>}
             </li>
           </Link>
