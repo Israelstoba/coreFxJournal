@@ -8,6 +8,7 @@ import {
   FaBook,
   FaRobot,
   FaUser,
+  FaFire,
   FaSignOutAlt,
   FaBullseye,
 } from 'react-icons/fa';
@@ -128,6 +129,16 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               {isOpen && <span>CFX Bots</span>}
             </li>
           </Link>
+
+          <Link to="/dashboard/streak-simulator" onClick={handleLinkClick}>
+            <li
+              className={`sidebar-list-items ${isActive('/dashboard/streak-simulator') ? 'active' : ''}`}
+            >
+              <FaFire className="icon" />
+              {isOpen && <span>Streak Sim</span>}
+            </li>
+          </Link>
+
           <Link to="/dashboard/settings" onClick={handleLinkClick}>
             <li
               className={`sidebar-list-items ${

@@ -1,0 +1,453 @@
+// src/styles/dashboard/_streakdisclaimer.scss
+@use '@/styles/variables' as *;
+
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+$sdm-green: $clr-prim-300;
+$sdm-green-dark: $clr-prim-100;
+$sdm-green-mid: $clr-prim-200;
+$sdm-green-pale: $clr-prim-400;
+$sdm-green-faint: $clr-prim-500;
+$sdm-navy: $clr-sec-200;
+$sdm-navy-light: $clr-sec-300;
+$sdm-red: #e74c3c;
+$sdm-red-pale: #fdf2f2;
+$sdm-blue: #2563eb;
+$sdm-blue-pale: #eff6ff;
+$sdm-amber: #f59e0b;
+$sdm-white: $light;
+$sdm-text: $text;
+$sdm-border: #e5e7eb;
+$sdm-border-lt: #f0f2f5;
+$sdm-muted: #9ca3af;
+$sdm-secondary: #6b7280;
+
+// ─── Overlay ──────────────────────────────────────────────────────────────────
+.sdm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 42, 74, 0.55);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+  animation: sdmFadeIn 0.3s ease forwards;
+
+  &--out {
+    animation: sdmFadeOut 0.38s ease forwards;
+  }
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+.sdm-modal {
+  background: $sdm-white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow:
+    0 24px 60px rgba(26, 42, 74, 0.22),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+  animation: sdmSlideUp 0.35s cubic-bezier(0.34, 1.36, 0.64, 1) forwards;
+  border-top: 4px solid $sdm-green;
+
+  // Tidy scrollbar
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $sdm-border;
+    border-radius: 4px;
+  }
+
+  &--out {
+    animation: sdmSlideDown 0.38s ease forwards;
+  }
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+.sdm-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 28px 20px;
+
+  &__icon-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, $sdm-green-dark 0%, $sdm-green 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba($sdm-green, 0.35);
+  }
+
+  &__fire {
+    color: $sdm-white;
+    font-size: 22px;
+    animation: sdmFlicker 1.8s ease-in-out infinite;
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 20px;
+    font-weight: 800;
+    color: $sdm-navy;
+    margin: 0 0 2px;
+    letter-spacing: -0.3px;
+  }
+
+  &__sub {
+    font-size: 13px;
+    color: $sdm-secondary;
+    margin: 0;
+  }
+}
+
+// ─── Divider ──────────────────────────────────────────────────────────────────
+.sdm-divider {
+  height: 1px;
+  background: $sdm-border-lt;
+  margin: 0 28px;
+}
+
+// ─── Body ─────────────────────────────────────────────────────────────────────
+.sdm-body {
+  padding: 20px 28px;
+}
+
+.sdm-intro {
+  font-size: 14px;
+  color: $sdm-secondary;
+  line-height: 1.65;
+  margin: 0 0 20px;
+
+  strong {
+    color: $sdm-navy;
+    font-weight: 700;
+  }
+}
+
+// ─── Points ───────────────────────────────────────────────────────────────────
+.sdm-points {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.sdm-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fafbfc;
+  border: 1px solid $sdm-border-lt;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: $sdm-border;
+  }
+
+  &__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+
+    &--red {
+      background: $sdm-red-pale;
+      color: $sdm-red;
+    }
+
+    &--green {
+      background: $sdm-green-faint;
+      color: $sdm-green-dark;
+    }
+
+    &--blue {
+      background: $sdm-blue-pale;
+      color: $sdm-blue;
+    }
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+
+    strong {
+      font-size: 13px;
+      font-weight: 700;
+      color: $sdm-navy;
+      display: block;
+    }
+
+    span {
+      font-size: 12px;
+      color: $sdm-secondary;
+      line-height: 1.6;
+
+      em {
+        font-style: italic;
+        color: $sdm-navy;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// ─── Quote ────────────────────────────────────────────────────────────────────
+.sdm-quote {
+  margin: 0;
+  padding: 16px 20px;
+  background: linear-gradient(
+    135deg,
+    rgba($sdm-green-dark, 0.06) 0%,
+    rgba($sdm-green, 0.04) 100%
+  );
+  border: 1px solid rgba($sdm-green, 0.18);
+  border-left: 4px solid $sdm-green;
+  border-radius: 0 10px 10px 0;
+  font-size: 13px;
+  font-style: italic;
+  color: $sdm-secondary;
+  line-height: 1.65;
+
+  cite {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $sdm-green-mid;
+  }
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+.sdm-footer {
+  padding: 18px 28px 26px;
+  border-top: 1px solid $sdm-border-lt;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ─── Checkbox ─────────────────────────────────────────────────────────────────
+.sdm-checkbox-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+
+  &:hover .sdm-checkbox__custom {
+    border-color: $sdm-green;
+  }
+}
+
+.sdm-checkbox {
+  // Hidden — replaced by custom box
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+
+  &:checked + .sdm-checkbox__custom {
+    background: $sdm-green;
+    border-color: $sdm-green;
+
+    &::after {
+      opacity: 1;
+      transform: rotate(45deg) scale(1);
+    }
+  }
+}
+
+.sdm-checkbox__custom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid $sdm-border;
+  border-radius: 5px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.18s ease;
+  position: relative;
+  background: $sdm-white;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: 2px solid $sdm-white;
+    border-top: none;
+    border-left: none;
+    opacity: 0;
+    transform: rotate(45deg) scale(0.5);
+    transition: all 0.15s ease;
+  }
+}
+
+.sdm-checkbox__label {
+  font-size: 13px;
+  color: $sdm-secondary;
+  line-height: 1.5;
+  user-select: none;
+}
+
+// ─── Accept button ────────────────────────────────────────────────────────────
+.sdm-accept-btn {
+  width: 100%;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: not-allowed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  background: $sdm-border-lt;
+  color: $sdm-muted;
+  letter-spacing: 0.02em;
+
+  svg {
+    font-size: 14px;
+  }
+
+  &--ready {
+    background: linear-gradient(135deg, $sdm-green-dark 0%, $sdm-green 100%);
+    color: $sdm-white;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba($sdm-green, 0.35);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba($sdm-green, 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+// ─── Animations ───────────────────────────────────────────────────────────────
+@keyframes sdmFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sdmFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sdmSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sdmSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+}
+
+@keyframes sdmFlicker {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.95);
+  }
+}
+
+// ─── Responsive ───────────────────────────────────────────────────────────────
+@media (max-width: 560px) {
+  .sdm-modal {
+    border-radius: 16px;
+    max-height: 95vh;
+  }
+
+  .sdm-header {
+    padding: 20px 20px 16px;
+    gap: 12px;
+
+    &__icon-wrap {
+      width: 44px;
+      height: 44px;
+    }
+
+    &__title {
+      font-size: 17px;
+    }
+  }
+
+  .sdm-body {
+    padding: 16px 20px;
+  }
+  .sdm-footer {
+    padding: 16px 20px 22px;
+  }
+  .sdm-divider {
+    margin: 0 20px;
+  }
+
+  .sdm-point {
+    padding: 12px 13px;
+    gap: 11px;
+  }
+
+  .sdm-quote {
+    padding: 13px 15px;
+    font-size: 12px;
+  }
+}

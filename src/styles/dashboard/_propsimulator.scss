@@ -1,4 +1,4 @@
-@use '@/styles/variables' as *; // ✅ make sure to adjust path if needed
+// src/styles/dashboard/_propsimulator.scss
 
 // ─── Theme tokens (matching CoreFX palette from screenshot) ──────────────────
 $green-dark: #1a3d1a;
@@ -22,7 +22,7 @@ $amber: #f59e0b;
 $amber-pale: #fffbeb;
 $green-success: #27ae60;
 
-// ─── Gradients ────────────────────────────────────────────────────────────────
+// ─── Gradient (matches the CTA buttons in screenshot) ────────────────────────
 $gradient-brand: linear-gradient(135deg, $green-brand 0%, $green-light 100%);
 $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 
@@ -49,24 +49,19 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   min-height: 100%;
   font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
   color: $text-primary;
-  overflow-x: hidden;
-  box-sizing: border-box;
 }
 
-// ─── Page header ──────────────────────────────────────────────────────────────
+// ─── Page header ─────────────────────────────────────────────────────────────
 .ps-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 24px;
-  gap: 12px;
-  flex-wrap: wrap;
 
   &__left {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 0;
   }
 
   &__title {
@@ -82,7 +77,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   &__icon {
     color: $green-brand;
     font-size: 22px;
-    flex-shrink: 0;
   }
 
   &__sub {
@@ -90,18 +84,12 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     color: $text-secondary;
     margin: 0;
   }
-
-  .ps-btn--ghost {
-    flex-shrink: 0;
-  }
 }
 
-// ─── Generic card ─────────────────────────────────────────────────────────────
+// ─── Generic card ────────────────────────────────────────────────────────────
 .ps-card {
   @include card;
-  padding: 1rem;
-  min-width: 0;
-  box-sizing: border-box;
+  padding: 22px 24px;
 
   &__header {
     display: flex;
@@ -111,11 +99,10 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     font-weight: 700;
     color: $navy;
     margin-bottom: 18px;
-    flex-wrap: wrap;
 
+    // push action button to right
     .ps-btn {
       margin-left: auto;
-      flex-shrink: 0;
     }
   }
 
@@ -129,21 +116,16 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 // ─── Top row layout ───────────────────────────────────────────────────────────
 .ps-top-row {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 0.5rem;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
   margin-bottom: 20px;
-  min-width: 0;
 
-  > * {
-    min-width: 0;
-  }
-
-  @media (max-width: 1024px) {
+  @media (max-width: 960px) {
     grid-template-columns: 1fr;
   }
 }
 
-// ─── Buttons ──────────────────────────────────────────────────────────────────
+// ─── Buttons ─────────────────────────────────────────────────────────────────
 .ps-btn {
   display: inline-flex;
   align-items: center;
@@ -153,7 +135,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
   transition:
     opacity 0.15s,
     transform 0.1s;
@@ -190,23 +171,18 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 }
 
-// ─── Fields ───────────────────────────────────────────────────────────────────
+// ─── Fields ──────────────────────────────────────────────────────────────────
 .ps-field {
   display: flex;
   flex-direction: column;
   gap: 5px;
   flex: 1;
-  min-width: 0;
 }
 
 .ps-field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-
-  > * {
-    min-width: 0;
-  }
 }
 
 .ps-label {
@@ -231,7 +207,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     box-shadow 0.15s;
   width: 100%;
   outline: none;
-  box-sizing: border-box;
 
   &:focus {
     border-color: $green-brand;
@@ -255,7 +230,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 .ps-divider {
   height: 1px;
   background: $border-light;
-  margin: 0.5rem 0;
+  margin: 14px 0;
 }
 
 // ─── Phase toggle ─────────────────────────────────────────────────────────────
@@ -264,7 +239,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   border: 1px solid $border;
   border-radius: 8px;
   overflow: hidden;
-  width: 100%;
 }
 
 .ps-phase-btn {
@@ -291,7 +265,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 }
 
-// ─── EV pill ──────────────────────────────────────────────────────────────────
+// ─── EV pill ─────────────────────────────────────────────────────────────────
 .ps-ev-pill {
   display: flex;
   align-items: center;
@@ -310,7 +284,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     background: $green-pale;
     color: darken($green-brand, 10%);
     border: 1px solid rgba($green-brand, 0.2);
-
     svg {
       color: $green-brand;
     }
@@ -320,7 +293,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     background: $red-pale;
     color: darken($red, 8%);
     border: 1px solid rgba($red, 0.2);
-
     svg {
       color: $red;
     }
@@ -344,8 +316,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 6px;
-  gap: 8px;
-  flex-wrap: wrap;
 
   &--sm {
     font-size: 11px;
@@ -390,12 +360,12 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   min-width: 0;
 }
 
-// ─── Metrics grid ─────────────────────────────────────────────────────────────
+// ─── Metrics grid ────────────────────────────────────────────────────────────
 .ps-metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 14px;
 }
 
 .ps-metric {
@@ -406,7 +376,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   flex-direction: column;
   gap: 3px;
   border: 1px solid $border-light;
-  min-width: 0;
 
   &__label {
     @include label-sm;
@@ -416,9 +385,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     font-size: 18px;
     font-weight: 700;
     color: $navy;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 
     &.green {
       color: $green-success;
@@ -437,7 +403,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 }
 
-// ─── W/L strip ────────────────────────────────────────────────────────────────
+// ─── W/L strip ───────────────────────────────────────────────────────────────
 .ps-wl-strip {
   display: flex;
   gap: 6px;
@@ -465,7 +431,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
       color: $green-brand;
     }
   }
-
   &--l {
     background: $red-pale;
     border-color: rgba($red, 0.2);
@@ -473,7 +438,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
       color: $red;
     }
   }
-
   &--be {
     background: $amber-pale;
     border-color: rgba($amber, 0.25);
@@ -483,7 +447,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 }
 
-// ─── Next trade suggestion ─────────────────────────────────────────────────────
+// ─── Next trade suggestion ────────────────────────────────────────────────────
 .ps-next-trade {
   background: $green-pale;
   border: 1px solid rgba($green-brand, 0.25);
@@ -513,7 +477,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     align-items: baseline;
     gap: 10px;
     margin-bottom: 5px;
-    flex-wrap: wrap;
   }
 
   &__pct {
@@ -581,19 +544,8 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
 }
 
 // ─── Trade log card ───────────────────────────────────────────────────────────
-// overflow:hidden clips the scrollable table so it respects the card border-radius
 .ps-card--log {
-  overflow: hidden;
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0;
-
-  .ps-card__header {
-    padding: 20px 24px 14px;
-    border-bottom: 1px solid $border-light;
-    margin-bottom: 0;
-  }
+  margin-bottom: 16px;
 }
 
 .ps-log-empty {
@@ -615,43 +567,21 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 }
 
-// ─── Table wrapper ────────────────────────────────────────────────────────────
+// ─── Table ───────────────────────────────────────────────────────────────────
 .ps-table-wrap {
-  min-width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  border-top: 1px solid $border-light;
-
-  &::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: $border-light;
-    border-radius: 0 0 10px 10px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: $border;
-    border-radius: 4px;
-
-    &:hover {
-      background: rgba($green-brand, 0.4);
-    }
-  }
+  border-radius: 10px;
+  border: 1px solid $border-light;
 }
 
-// ─── Table ────────────────────────────────────────────────────────────────────
 .ps-table {
   width: 100%;
-  min-width: 900px; // forces scroll on small screens instead of squishing
   border-collapse: collapse;
   font-size: 12px;
 
   th {
     @include label-sm;
-    padding: 10px 12px;
+    padding: 10px 10px;
     background: $bg-page;
     border-bottom: 1px solid $border;
     text-align: left;
@@ -659,11 +589,10 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 
   td {
-    padding: 9px 12px;
+    padding: 8px 10px;
     border-bottom: 1px solid $border-light;
     color: $text-primary;
     vertical-align: middle;
-    white-space: nowrap;
 
     &.green {
       color: $green-success;
@@ -700,7 +629,7 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 }
 
-// ─── Table inputs ─────────────────────────────────────────────────────────────
+// ─── Table inputs ────────────────────────────────────────────────────────────
 .ps-table-input {
   padding: 4px 7px;
   border: 1px solid $border;
@@ -709,7 +638,6 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   color: $text-primary;
   background: #fafbfc;
   outline: none;
-  box-sizing: border-box;
 
   &:focus {
     border-color: $green-brand;
@@ -823,52 +751,14 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
   }
 }
 
-// ─── Responsive: Tablet (≤ 1024px) ───────────────────────────────────────────
-@media (max-width: 1024px) {
-  .prop-simulator {
-    padding: 20px;
-  }
-
-  .ps-top-row {
-    grid-template-columns: 1fr;
-  }
-
-  .ps-balance-value {
-    font-size: 24px;
-  }
-}
-
-// ─── Responsive: Mobile (≤ 768px) ────────────────────────────────────────────
+// ─── Responsive ───────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .prop-simulator {
-    padding: 14px;
-  }
-
-  .ps-page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-
-    &__title {
-      font-size: 20px;
-    }
-
-    .ps-btn--ghost {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-
-  .ps-card {
     padding: 16px;
-
-    &__header {
-      font-size: 14px;
-    }
   }
 
-  .ps-card--log .ps-card__header {
-    padding: 16px 16px 12px;
+  .ps-page-header__title {
+    font-size: 20px;
   }
 
   .ps-field-row {
@@ -879,76 +769,8 @@ $gradient-navy: linear-gradient(135deg, $navy 0%, $navy-mid 100%);
     grid-template-columns: 1fr 1fr;
   }
 
-  .ps-balance-value {
-    font-size: 22px;
-  }
-
-  .ps-metric__value {
-    font-size: 16px;
-  }
-
-  .ps-next-trade {
-    &__pct {
-      font-size: 20px;
-    }
-    &__usd {
-      font-size: 13px;
-    }
-  }
-
-  .ps-wl-strip {
-    gap: 5px;
-  }
-
-  .ps-wl-item {
-    font-size: 11px;
-    padding: 3px 8px;
-  }
-
-  .ps-card__header .ps-btn--primary {
-    width: 100%;
-    justify-content: center;
-    margin-left: 0;
-    margin-top: 8px;
-  }
-
   .ps-outcome-group {
     flex-direction: column;
     gap: 2px;
-  }
-}
-
-// ─── Responsive: Small mobile (≤ 480px) ──────────────────────────────────────
-@media (max-width: 480px) {
-  .prop-simulator {
-    padding: 12px 10px;
-  }
-
-  .ps-page-header__title {
-    font-size: 18px;
-  }
-
-  .ps-card {
-    padding: 14px 12px;
-  }
-
-  .ps-card--log .ps-card__header {
-    padding: 14px 12px 12px;
-    flex-direction: column;
-    align-items: flex-start;
-
-    .ps-btn {
-      margin-left: 0;
-      width: 100%;
-      justify-content: center;
-    }
-  }
-
-  .ps-metrics-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ps-balance-value {
-    font-size: 20px;
   }
 }

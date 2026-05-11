@@ -464,7 +464,7 @@ const PropSimulator = () => {
             <div className="ps-balance-row ps-balance-row--sm">
               <span>{fmtUSD(stats.activeBal)}</span>
               <span className="ps-target-label">
-                Target: {fmtUSD(stats.target)}
+                Overall Target: {fmtUSD(stats.target)}
               </span>
             </div>
           </div>
@@ -472,12 +472,12 @@ const PropSimulator = () => {
           {/* Metric grid */}
           <div className="ps-metrics-grid">
             <MetricCard
-              label="To Target"
+              label="Profit Target"
               value={fmtUSD(stats.toTarget)}
               valueClass={stats.toTarget === 0 ? 'green' : ''}
             />
             <MetricCard
-              label="DD Left"
+              label="Max DD Left"
               value={fmtUSD(stats.ddLeft)}
               sub={`${fmtPct(stats.ddPct || 0)} used`}
               valueClass={
@@ -516,7 +516,7 @@ const PropSimulator = () => {
               BE <strong>{stats.bes || 0}</strong>
             </span>
             <span className="ps-wl-item">
-              WR <strong>{stats.wr || '—'}</strong>
+              Win Rate <strong>{stats.wr || '—'}</strong>
             </span>
           </div>
 
@@ -530,7 +530,9 @@ const PropSimulator = () => {
                   : ''
             }`}
           >
-            <div className="ps-next-trade__header">Next trade suggestion</div>
+            <div className="ps-next-trade__header">
+              Next trade risk suggestion
+            </div>
             <div className="ps-next-trade__main">
               <span className="ps-next-trade__pct">
                 {fmtPct(stats.suggestedR || 0)}
@@ -540,11 +542,11 @@ const PropSimulator = () => {
               </span>
             </div>
             <div className="ps-next-trade__detail">
-              Win @ {rrRatio}R →{' '}
+              A Win @ {rrRatio}R ={' '}
               <strong className="green">
                 {fmtUSD((stats.suggestedUSD || 0) * (parseFloat(rrRatio) || 3))}
               </strong>
-              &nbsp;·&nbsp; Loss →{' '}
+              &nbsp;| &nbsp; A Loss ={' '}
               <strong className="red">
                 −{fmtUSD(stats.suggestedUSD || 0)}
               </strong>

@@ -29,6 +29,7 @@ import Playbooks from './pages/dashboard/Playbooks';
 import CfxBot from './pages/dashboard/CfxBot';
 import Settings from './pages/dashboard/Settings';
 import Profile from './pages/dashboard/Profile';
+import StreakSimulator from '@/pages/dashboard/StreakSimulator';
 
 function App() {
   return (
@@ -100,6 +101,7 @@ function App() {
           <Route path="bots" element={<CfxBot />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="streak-simulator" element={<StreakSimulator />} />
           <Route path="*" element={<Navigate to="journal" replace />} />
         </Route>
 
