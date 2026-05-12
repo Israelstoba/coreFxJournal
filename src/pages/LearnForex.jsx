@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './_learnforex.scss';
 
 // ─── SVG Animations ──────────────────────────────────────────────────────────
@@ -57,6 +57,318 @@ const ChartAnimation = () => (
     />
   </svg>
 );
+
+// ─── Session Clock Component ──────────────────────────────────────────────────
+const SESSIONS = [
+  {
+    name: 'Sydney',
+    flag: '🦘',
+    timezone: 'Australia/Sydney',
+    openHourUTC: 22, // 10 PM UTC (approx, summer)
+    closeHourUTC: 7,
+    color: '#f59e0b',
+    glow: 'rgba(245,158,11,0.3)',
+    pairs: 'AUD, NZD',
+    watOpen: '11 PM',
+    watClose: '8 AM',
+  },
+  {
+    name: 'Tokyo',
+    flag: '🗼',
+    timezone: 'Asia/Tokyo',
+    openHourUTC: 0,
+    closeHourUTC: 9,
+    color: '#e94560',
+    glow: 'rgba(233,69,96,0.3)',
+    pairs: 'JPY, AUD',
+    watOpen: '1 AM',
+    watClose: '10 AM',
+  },
+  {
+    name: 'London',
+    flag: '🏰',
+    timezone: 'Europe/London',
+    openHourUTC: 8,
+    closeHourUTC: 17,
+    color: '#38bdf8',
+    glow: 'rgba(56,189,248,0.3)',
+    pairs: 'EUR, GBP, CHF',
+    watOpen: '9 AM',
+    watClose: '6 PM',
+  },
+  {
+    name: 'New York',
+    flag: '🗽',
+    timezone: 'America/New_York',
+    openHourUTC: 13,
+    closeHourUTC: 22,
+    color: '#22c55e',
+    glow: 'rgba(34,197,94,0.3)',
+    pairs: 'USD, CAD',
+    watOpen: '2 PM',
+    watClose: '11 PM',
+  },
+];
+
+// Overlaps (UTC hour ranges)
+const OVERLAPS = [
+  {
+    name: 'Tokyo–London',
+    start: 8,
+    end: 9,
+    color: '#c084fc',
+    sessions: ['Tokyo', 'London'],
+    desc: 'Low–moderate volatility. EUR/JPY, GBP/JPY active.',
+    watTime: '9–10 AM WAT',
+  },
+  {
+    name: 'London–New York',
+    start: 13,
+    end: 17,
+    color: '#ff6b6b',
+    sessions: ['London', 'New York'],
+    desc: 'Highest volatility of the day. Best time for all major pairs. Prime time for Nigerian traders.',
+    watTime: '2–6 PM WAT ⭐ PRIME',
+  },
+];
+
+function isSessionOpen(session) {
+  const now = new Date();
+  const utcH = now.getUTCHours();
+  const utcM = now.getUTCMinutes();
+  const utcTotal = utcH * 60 + utcM;
+  const open = session.openHourUTC * 60;
+  const close = session.closeHourUTC * 60;
+  if (open < close) return utcTotal >= open && utcTotal < close;
+  // overnight session (wraps midnight)
+  return utcTotal >= open || utcTotal < close;
+}
+
+function isOverlapActive(overlap) {
+  const now = new Date();
+  const utcH = now.getUTCHours();
+  return utcH >= overlap.start && utcH < overlap.end;
+}
+
+function getLocalTime(timezone) {
+  return new Date().toLocaleTimeString('en-US', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+}
+
+function getWATTime() {
+  return new Date().toLocaleTimeString('en-US', {
+    timeZone: 'Africa/Lagos',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+}
+
+// Analog clock SVG face
+function AnalogClock({ timezone, color }) {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const localStr = time.toLocaleTimeString('en-US', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const [hStr, mStr, sStr] = localStr.split(':');
+  const h = parseInt(hStr, 10) % 12;
+  const m = parseInt(mStr, 10);
+  const s = parseInt(sStr, 10);
+
+  const sDeg = s * 6;
+  const mDeg = m * 6 + s * 0.1;
+  const hDeg = h * 30 + m * 0.5;
+
+  const hand = (deg, len, width, clr) => {
+    const rad = ((deg - 90) * Math.PI) / 180;
+    const x2 = 40 + len * Math.cos(rad);
+    const y2 = 40 + len * Math.sin(rad);
+    return (
+      <line
+        x1="40"
+        y1="40"
+        x2={x2.toFixed(2)}
+        y2={y2.toFixed(2)}
+        stroke={clr}
+        strokeWidth={width}
+        strokeLinecap="round"
+      />
+    );
+  };
+
+  // tick marks
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const angle = ((i * 30 - 90) * Math.PI) / 180;
+    const x1 = 40 + 32 * Math.cos(angle);
+    const y1 = 40 + 32 * Math.sin(angle);
+    const x2 = 40 + 36 * Math.cos(angle);
+    const y2 = 40 + 36 * Math.sin(angle);
+    return (
+      <line
+        key={i}
+        x1={x1.toFixed(1)}
+        y1={y1.toFixed(1)}
+        x2={x2.toFixed(1)}
+        y2={y2.toFixed(1)}
+        stroke={`${color}80`}
+        strokeWidth="1.5"
+      />
+    );
+  });
+
+  return (
+    <svg viewBox="0 0 80 80" width="80" height="80">
+      {/* Face */}
+      <circle
+        cx="40"
+        cy="40"
+        r="38"
+        fill="#0d1f35"
+        stroke={`${color}40`}
+        strokeWidth="1.5"
+      />
+      <circle
+        cx="40"
+        cy="40"
+        r="38"
+        fill="none"
+        stroke={color}
+        strokeWidth="0.5"
+        opacity="0.4"
+      />
+      {/* Glow ring */}
+      <circle
+        cx="40"
+        cy="40"
+        r="35"
+        fill="none"
+        stroke={color}
+        strokeWidth="6"
+        opacity="0.06"
+      />
+      {/* Ticks */}
+      {ticks}
+      {/* Hands */}
+      {hand(hDeg, 20, 2.5, '#e2e8f0')}
+      {hand(mDeg, 27, 1.8, color)}
+      {hand(sDeg, 30, 1, '#ff6b6b')}
+      {/* Center dot */}
+      <circle cx="40" cy="40" r="2.5" fill={color} />
+    </svg>
+  );
+}
+
+// Full session clock widget
+function SessionClocks() {
+  const [tick, setTick] = useState(0);
+  const [watTime, setWatTime] = useState('');
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTick((t) => t + 1);
+      setWatTime(getWATTime());
+    }, 1000);
+    setWatTime(getWATTime());
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="lf-session-clocks">
+      {/* WAT header */}
+      <div className="lf-session-clocks__header">
+        <span className="lf-session-clocks__wat-label">🇳🇬 Your time (WAT)</span>
+        <span className="lf-session-clocks__wat-time">{watTime}</span>
+      </div>
+
+      {/* 4 clocks */}
+      <div className="lf-clocks-grid">
+        {SESSIONS.map((session) => {
+          const open = isSessionOpen(session);
+          return (
+            <div
+              key={session.name}
+              className={`lf-clock-card ${open ? 'lf-clock-card--open' : ''}`}
+              style={{ '--sc': session.color, '--sg': session.glow }}
+            >
+              <div className="lf-clock-card__status">
+                <span
+                  className={`lf-clock-card__dot ${open ? 'lf-clock-card__dot--open' : ''}`}
+                />
+                <span className="lf-clock-card__status-text">
+                  {open ? 'OPEN' : 'CLOSED'}
+                </span>
+              </div>
+
+              <div className="lf-clock-card__face">
+                <AnalogClock
+                  timezone={session.timezone}
+                  color={session.color}
+                />
+              </div>
+
+              <div className="lf-clock-card__digital">
+                {getLocalTime(session.timezone)}
+              </div>
+
+              <div className="lf-clock-card__name">
+                <span>{session.flag}</span> {session.name}
+              </div>
+
+              <div className="lf-clock-card__meta">
+                <span>
+                  {session.watOpen}–{session.watClose} WAT
+                </span>
+                <span className="lf-clock-card__pairs">{session.pairs}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Overlaps */}
+      <div className="lf-overlaps">
+        <h4 className="lf-overlaps__title">⚡ Session Overlaps</h4>
+        <div className="lf-overlaps__grid">
+          {OVERLAPS.map((ov) => {
+            const active = isOverlapActive(ov);
+            return (
+              <div
+                key={ov.name}
+                className={`lf-overlap-card ${active ? 'lf-overlap-card--active' : ''}`}
+                style={{ '--oc': ov.color }}
+              >
+                <div className="lf-overlap-card__top">
+                  <span className="lf-overlap-card__name">{ov.name}</span>
+                  {active && (
+                    <span className="lf-overlap-card__live">● LIVE NOW</span>
+                  )}
+                </div>
+                <div className="lf-overlap-card__time">{ov.watTime}</div>
+                <p className="lf-overlap-card__desc">{ov.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Topic Data ───────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -225,13 +537,15 @@ const TOPICS = [
     },
   },
   {
+    // ── TRADING SESSIONS — extra content injected below via extraContent ──
     id: 'trading-sessions',
     title: 'Trading Sessions',
     icon: '🕐',
     gradient: 'linear-gradient(135deg, #0a1a0a 0%, #0d2b1a 50%, #0f3d20 100%)',
     accent: '#22c55e',
     tag: 'Timing',
-    duration: '6 min read',
+    duration: '8 min read',
+    hasSessionClocks: true, // ← flag consumed in render
     content: {
       intro:
         'Forex operates 24 hours, 5 days a week across four major sessions. Knowing when to trade is as important as knowing how to trade.',
@@ -239,29 +553,52 @@ const TOPICS = [
         {
           heading: 'Sydney Session',
           icon: '🦘',
-          body: 'Opens: 10 PM GMT (11 PM WAT). Low volatility, low volume. AUD/NZD pairs most active. Not ideal for beginners — wider spreads.',
+          body: 'Opens: 10 PM GMT (11 PM WAT) | Closes: 7 AM GMT. Low volatility, low volume. AUD and NZD pairs most active. Wider spreads — not ideal for beginners.',
         },
         {
           heading: 'Tokyo / Asian Session',
           icon: '🗼',
-          body: 'Opens: 12 AM GMT (1 AM WAT). JPY pairs most active. Moderate volatility. Price often ranges during this session.',
+          body: 'Opens: 12 AM GMT (1 AM WAT) | Closes: 9 AM GMT. JPY pairs most active. Moderate volatility. Price often ranges during this session.',
         },
         {
           heading: 'London Session',
           icon: '🏰',
-          body: 'Opens: 8 AM GMT (9 AM WAT). Highest volume. EUR, GBP, CHF most active. Most breakouts begin here. Best session for Nigerian traders.',
+          body: 'Opens: 8 AM GMT (9 AM WAT) | Closes: 5 PM GMT. Highest volume. EUR, GBP, CHF most active. Most breakouts begin here. Best session for Nigerian traders.',
         },
         {
           heading: 'New York Session',
           icon: '🗽',
-          body: 'Opens: 1 PM GMT (2 PM WAT). Second highest volume. The London–NY overlap (1–5 PM GMT) is the MOST volatile period of the day.',
+          body: 'Opens: 1 PM GMT (2 PM WAT) | Closes: 10 PM GMT. Second highest volume. USD pairs very active. The London–NY overlap is the most volatile period of the day.',
+        },
+      ],
+      overlapSections: [
+        {
+          heading: 'What is a Session Overlap?',
+          icon: '🔀',
+          body: 'A session overlap occurs when two major markets are open at the same time. During overlaps, trading volume spikes, spreads tighten, and price moves faster and further — creating the best opportunities.',
+        },
+        {
+          heading: 'Tokyo–London Overlap',
+          icon: '🟣',
+          body: 'Occurs 8–9 AM GMT (9–10 AM WAT). Low-to-moderate volatility. EUR/JPY and GBP/JPY see the most activity. Short window — only 1 hour. Not the prime time but still tradeable.',
+        },
+        {
+          heading: 'London–New York Overlap ⭐',
+          icon: '🔴',
+          body: 'Occurs 1–5 PM GMT (2–6 PM WAT). The MOST volatile and liquid period of the entire trading week. All major pairs move significantly. This is prime time for Nigerian traders. EUR/USD, GBP/USD, USD/JPY all see heavy volume.',
+        },
+        {
+          heading: 'Why Avoid Non-Overlap Hours?',
+          icon: '😴',
+          body: 'Outside overlap windows — especially during the Asian session only — price often drifts slowly or ranges tightly. Spreads widen, moves are smaller, and false breakouts are more common. Save your best setups for overlap periods.',
         },
       ],
       keyPoints: [
-        'London–NY overlap (2–6 PM WAT) = peak volatility',
+        'London–NY overlap (2–6 PM WAT) = highest daily volatility',
         'Avoid trading late Sunday / early Monday',
-        'London session best for Nigerian traders',
-        'Check economic calendar before news',
+        'London session is the best single session for Nigerian traders',
+        'Session overlaps = tighter spreads + bigger moves',
+        'Check the economic calendar before any session',
       ],
     },
   },
@@ -564,14 +901,16 @@ export default function LearnForex() {
 
   const progress = ((activeIndex + 1) / TOPICS.length) * 100;
 
-  // ── TOPIC CONTENT PAGE ──────────────────────────────────────────────────────
+  // ── TOPIC CONTENT PAGE ────────────────────────────────────────────────────
   if (activeTopic) {
+    const isSessions = activeTopic.id === 'trading-sessions';
+
     return (
       <div
         className={`lf-page ${animating ? 'lf-page-exit' : 'lf-page-enter'}`}
         ref={contentRef}
       >
-        {/* Sticky top bar — CorePips theme */}
+        {/* Top bar */}
         <div className="lf-topbar">
           <button className="lf-topbar__back" onClick={closeTopic}>
             ← All Topics
@@ -582,7 +921,7 @@ export default function LearnForex() {
           </span>
         </div>
 
-        {/* Topic hero — CARD GRADIENT & ACCENT RETAINED ──────────────────── */}
+        {/* Hero — card gradient retained */}
         <div
           className="lf-topic-hero"
           style={{ background: activeTopic.gradient }}
@@ -598,19 +937,31 @@ export default function LearnForex() {
             >
               ● {activeTopic.tag} · {activeTopic.duration}
             </div>
-
             <div className="lf-topic-hero__heading">
               <span className="lf-topic-hero__emoji">{activeTopic.icon}</span>
               <h1 className="lf-topic-hero__title">{activeTopic.title}</h1>
             </div>
-
             <p className="lf-topic-hero__intro">{activeTopic.content.intro}</p>
           </div>
         </div>
-        {/* ─────────────────────────────────────────────────────────────────── */}
 
-        {/* Body — entirely CorePips theme via SCSS */}
+        {/* Body — CorePips theme */}
         <div className="lf-topic-body">
+          {/* ── Session Clocks (trading-sessions only) ── */}
+          {isSessions && (
+            <div className="lf-section-divider">
+              <span>🕐 Live Session Clocks</span>
+            </div>
+          )}
+          {isSessions && <SessionClocks />}
+
+          {/* Main sections */}
+          {isSessions && (
+            <div className="lf-section-divider">
+              <span>📚 The Four Sessions</span>
+            </div>
+          )}
+
           <div className="lf-sections-list">
             {activeTopic.content.sections.map((section, i) => (
               <div key={i} className="lf-section-block" style={{ '--si': i }}>
@@ -625,6 +976,35 @@ export default function LearnForex() {
             ))}
           </div>
 
+          {/* ── Overlap sections (trading-sessions only) ── */}
+          {isSessions && activeTopic.content.overlapSections && (
+            <>
+              <div className="lf-section-divider lf-section-divider--overlap">
+                <span>⚡ Session Overlaps Explained</span>
+              </div>
+              <div className="lf-sections-list">
+                {activeTopic.content.overlapSections.map((section, i) => (
+                  <div
+                    key={i}
+                    className="lf-section-block lf-section-block--overlap"
+                    style={{ '--si': i }}
+                  >
+                    <span className="lf-section-block__icon">
+                      {section.icon}
+                    </span>
+                    <div>
+                      <h3 className="lf-section-block__heading">
+                        {section.heading}
+                      </h3>
+                      <p className="lf-section-block__body">{section.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Key Takeaways */}
           <div className="lf-takeaways">
             <p className="lf-takeaways__label">Key Takeaways</p>
             <div className="lf-takeaways__list">
@@ -637,6 +1017,7 @@ export default function LearnForex() {
             </div>
           </div>
 
+          {/* Footer nav */}
           <div className="lf-topic-footer">
             <div className="lf-progress">
               <div className="lf-progress__labels">
@@ -692,7 +1073,7 @@ export default function LearnForex() {
     );
   }
 
-  // ── GRID / HOME PAGE ─────────────────────────────────────────────────────────
+  // ── GRID / HOME PAGE ────────────────────────────────────────────────────────
   return (
     <div className={`lf-page ${animating ? 'lf-page-exit' : 'lf-page-enter'}`}>
       <section className="lf-hero">
@@ -787,10 +1168,8 @@ export default function LearnForex() {
                     {topic.tag}
                   </span>
                 </div>
-
                 <h3 className="lf-card__title">{topic.title}</h3>
                 <p className="lf-card__intro">{topic.content.intro}</p>
-
                 <div
                   className="lf-card__footer"
                   style={{ borderTop: `1px solid ${color.border}22` }}

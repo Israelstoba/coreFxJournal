@@ -62,6 +62,30 @@
   }
 }
 
+// ── NEW ───────────────────────────────────────
+@keyframes lf-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes lf-clockGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px var(--sg, rgba(34, 197, 94, 0.2));
+  }
+  50% {
+    box-shadow: 0 0 22px var(--sg, rgba(34, 197, 94, 0.4));
+  }
+}
+// ─────────────────────────────────────────────
+
 // ─────────────────────────────────────────────
 // Root wrapper
 // ─────────────────────────────────────────────
@@ -69,7 +93,6 @@
   min-height: 100vh;
   background: $bg-page;
   font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
-
   color: $text-primary;
   overflow-x: hidden;
   padding-top: 5rem;
@@ -138,18 +161,6 @@
     );
     pointer-events: none;
   }
-
-  // Subtle grid overlay
-  // &::after {
-  //   content: '';
-  //   position: absolute;
-  //   inset: 0;
-  //   background-image:
-  //     linear-gradient(rgba($clr-prim-300, 0.05) 1px, transparent 1px),
-  //     linear-gradient(90deg, rgba($clr-prim-300, 0.05) 1px, transparent 1px);
-  //   background-size: 60px 60px;
-  //   pointer-events: none;
-  // }
 }
 
 .lf-hero__inner {
@@ -215,7 +226,6 @@
 
 .lf-hero__stat {
   text-align: center;
-
   font-size: 12px;
   color: $text-muted;
 
@@ -235,7 +245,6 @@
   border-top: 1px solid $border-light;
   border-bottom: 1px solid $border-light;
   background: $bg-card;
-  // background: $dark;
   padding: 14px 24px;
   overflow-x: auto;
   white-space: nowrap;
@@ -264,7 +273,7 @@
 
 .lf-roadmap__btn {
   background: none;
-  border: 2px solid transparent; // color set via inline CSS (dynamic card color)
+  border: 2px solid transparent;
   border-radius: 20px;
   padding: 4px 12px;
   font-size: 12px;
@@ -314,6 +323,7 @@
   transition:
     transform 0.28s ease,
     box-shadow 0.28s ease;
+  animation: lf-cardIn 0.5s calc(var(--i, 0) * 0.05s) ease both;
 
   // Shine overlay on hover
   &::before {
@@ -337,11 +347,6 @@
   &:active {
     transform: translateY(-2px) scale(1.01);
   }
-}
-
-// Staggered animation — index set via --i CSS custom prop in JSX
-.lf-card {
-  animation: lf-cardIn 0.5s calc(var(--i, 0) * 0.05s) ease both;
 }
 
 .lf-card__top {
@@ -520,15 +525,13 @@
 }
 
 // ─────────────────────────────────────────────
-// Topic hero header  — RETAINS card gradient/accent (inline)
+// Topic hero header — RETAINS card gradient/accent (inline)
 // ─────────────────────────────────────────────
 .lf-topic-hero {
-  // background gradient injected inline per topic
   padding: 60px 24px 50px;
   position: relative;
   overflow: hidden;
 
-  // Dot-grid overlay using topic accent (injected via CSS var --topic-accent)
   &::before {
     content: '';
     position: absolute;
@@ -598,6 +601,52 @@
   background: $bg-page;
 }
 
+// ─────────────────────────────────────────────
+// Section divider — NEW
+// Labels each content group with a ruled line
+// ─────────────────────────────────────────────
+.lf-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 32px 0 20px;
+
+  span {
+    font-size: 11px;
+    font-weight: 700;
+    color: $clr-prim-200;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: $border-light;
+  }
+
+  // Red variant used for the overlaps section
+  &--overlap {
+    span {
+      color: #ff6b6b;
+    }
+    &::before,
+    &::after {
+      background: rgba(#ff6b6b, 0.2);
+    }
+  }
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+// ─────────────────────────────────────────────
+// Content sections list
+// ─────────────────────────────────────────────
 .lf-sections-list {
   display: flex;
   flex-direction: column;
@@ -612,7 +661,7 @@
   display: flex;
   gap: 16px;
   align-items: flex-start;
-  border-left: 3px solid $clr-prim-300; // CorePips primary green accent
+  border-left: 3px solid $clr-prim-300;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -622,6 +671,16 @@
   &:hover {
     transform: translateX(4px);
     box-shadow: 0 4px 20px rgba($clr-prim-100, 0.08);
+  }
+
+  // NEW — Overlap variant: red left border + tinted bg
+  &--overlap {
+    border-left-color: #ff6b6b;
+    background: rgba(#ff6b6b, 0.02);
+
+    .lf-section-block__heading {
+      color: darken(#ff6b6b, 10%);
+    }
   }
 }
 
@@ -829,6 +888,220 @@
   }
 }
 
+// ═════════════════════════════════════════════
+// SESSION CLOCKS WIDGET — NEW
+// ═════════════════════════════════════════════
+
+.lf-session-clocks {
+  background: #0a1120;
+  border: 1px solid rgba(#22c55e, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+// WAT header bar
+.lf-session-clocks__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(#22c55e, 0.07);
+  border: 1px solid rgba(#22c55e, 0.2);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 24px;
+}
+
+.lf-session-clocks__wat-label {
+  font-size: 12px;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.lf-session-clocks__wat-time {
+  font-size: 15px;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: 0.05em;
+}
+
+// 4-clock grid
+// --sc = session color hex   --sg = session glow rgba
+.lf-clocks-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+
+  @media (max-width: 680px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 360px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Individual clock card
+.lf-clock-card {
+  background: #0d1f35;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  transition: border-color 0.3s ease;
+
+  &--open {
+    border-color: var(--sc);
+    animation: lf-clockGlow 2.5s ease-in-out infinite;
+  }
+}
+
+.lf-clock-card__status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.lf-clock-card__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #334155;
+
+  &--open {
+    background: var(--sc);
+    animation: lf-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+.lf-clock-card__status-text {
+  color: #475569;
+
+  .lf-clock-card--open & {
+    color: var(--sc);
+  }
+}
+
+.lf-clock-card__face {
+  width: 80px;
+  height: 80px;
+}
+
+.lf-clock-card__digital {
+  font-size: 11px;
+  color: #e2e8f0;
+  letter-spacing: 0.03em;
+}
+
+.lf-clock-card__name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sc);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lf-clock-card__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  color: #475569;
+  text-align: center;
+}
+
+.lf-clock-card__pairs {
+  font-weight: 600;
+  // Slightly brighter than the muted meta text
+  filter: brightness(1.3);
+}
+
+// ═════════════════════════════════════════════
+// OVERLAPS PANEL — NEW
+// Lives inside .lf-session-clocks
+// ═════════════════════════════════════════════
+
+.lf-overlaps {
+  margin-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 20px;
+}
+
+.lf-overlaps__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.lf-overlaps__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// --oc = overlap color hex
+.lf-overlap-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid var(--oc);
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: background 0.2s ease;
+
+  &--active {
+    background: rgba(255, 107, 107, 0.06);
+    border-color: var(--oc);
+    border-left-color: var(--oc);
+  }
+}
+
+.lf-overlap-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.lf-overlap-card__name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--oc);
+}
+
+.lf-overlap-card__live {
+  font-size: 9px;
+  color: var(--oc);
+  letter-spacing: 0.08em;
+  animation: lf-pulse 1.4s ease-in-out infinite;
+}
+
+.lf-overlap-card__time {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.lf-overlap-card__desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.55;
+}
+
 // ─────────────────────────────────────────────
 // Responsive
 // ─────────────────────────────────────────────
@@ -851,5 +1124,10 @@
 
   .lf-grid-wrap {
     padding: 32px 16px 60px;
+  }
+
+  // NEW
+  .lf-session-clocks {
+    padding: 16px;
   }
 }
