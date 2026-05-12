@@ -99,7 +99,7 @@ const Landing = () => {
   const [offerRef, offerInView] = useInView(0.2);
 
   // Counters
-  const traders = useCounter(500, 2200, statsInView);
+  const traders = useCounter(100, 2200, statsInView);
   const winRate = useCounter(85, 1800, statsInView);
   const trades = useCounter(1000, 2400, statsInView);
 
@@ -220,6 +220,7 @@ const Landing = () => {
         <div className={`stats-grid ${statsInView ? 'in-view' : ''}`}>
           <div className="stat stat-1">
             <div className="stat-icon">🎓</div>
+            <span className="upto">Upto</span>
             <h3>
               <span className="count">{traders.toLocaleString()}</span>+
             </h3>
@@ -233,6 +234,7 @@ const Landing = () => {
           </div>
           <div className="stat stat-2">
             <div className="stat-icon">📈</div>
+            <span className="upto">Upto</span>
             <h3>
               <span className="count">{winRate}</span>%
             </h3>
@@ -246,6 +248,7 @@ const Landing = () => {
           </div>
           <div className="stat stat-3">
             <div className="stat-icon">📝</div>
+            <span className="upto">Upto</span>
             <h3>
               <span className="count">{trades.toLocaleString()}</span>+
             </h3>

@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
+import LearnForex from './pages/LearnForex';
 import Calculator from './components/Calculator';
 import Footer from './components/Footer';
 import CfxFlip from './components/CfxFlip';
@@ -42,6 +43,16 @@ function App() {
             <>
               <Navbar />
               <Landing />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/LearnForex"
+          element={
+            <>
+              <Navbar />
+              <LearnForex />
               <Footer />
             </>
           }

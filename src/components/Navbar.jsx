@@ -150,6 +150,15 @@ export default function Navbar() {
           {!hideExtraLinks && (
             <>
               <li className="list-items">
+                <Link
+                  to="/learnforex"
+                  className="links"
+                  onClick={handleLinkClick}
+                >
+                  Learn Forex
+                </Link>
+              </li>
+              <li className="list-items">
                 <a className="links" href="#about" onClick={handleLinkClick}>
                   About
                 </a>
