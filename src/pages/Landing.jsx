@@ -105,34 +105,25 @@ const Landing = () => {
 
   // ── Smartsupp live chat ───────────────────────────────────
   useEffect(() => {
-    // Avoid injecting twice (e.g. React StrictMode double-invoke)
-    if (document.getElementById('smartsupp-script')) return;
+    if (document.getElementById('tawkto-script')) return;
 
-    window._smartsupp = window._smartsupp || {};
-    window._smartsupp.key = '38d0132afc9d76d94616f5a0163728477980d4b6';
-
-    window.smartsupp =
-      window.smartsupp ||
-      function () {
-        window.smartsupp._.push(arguments);
-      };
-    window.smartsupp._ = window.smartsupp._ || [];
-
-    const existingScript = document.getElementsByTagName('script')[0];
     const script = document.createElement('script');
-    script.id = 'smartsupp-script';
-    script.type = 'text/javascript';
-    script.charset = 'utf-8';
+    script.id = 'tawkto-script';
     script.async = true;
-    script.src = 'https://www.smartsuppchat.com/loader.js?';
-    existingScript.parentNode.insertBefore(script, existingScript);
+    script.src = 'https://embed.tawk.to/6a05c339a078b01c35e270d4/1joj856rq';
+    script.charset = 'UTF-8';
+    script.setAttribute('crossorigin', '*');
+    document
+      .getElementsByTagName('script')[0]
+      .parentNode.insertBefore(
+        script,
+        document.getElementsByTagName('script')[0],
+      );
 
-    // Cleanup: remove widget on unmount so it doesn't persist on other pages
     return () => {
-      const s = document.getElementById('smartsupp-script');
+      const s = document.getElementById('tawkto-script');
       if (s) s.remove();
-      // Hide the widget box if Smartsupp added it to the DOM
-      const box = document.getElementById('smartsupp-box');
+      const box = document.getElementById('tawkto-container');
       if (box) box.remove();
     };
   }, []);
