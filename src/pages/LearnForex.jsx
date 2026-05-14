@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './_learnforex.scss';
 
 // ─── SVG Animations ──────────────────────────────────────────────────────────
@@ -58,13 +58,13 @@ const ChartAnimation = () => (
   </svg>
 );
 
-// ─── Session Clock Component ──────────────────────────────────────────────────
+// ─── Session Clock ────────────────────────────────────────────────────────────
 const SESSIONS = [
   {
     name: 'Sydney',
     flag: '🦘',
     timezone: 'Australia/Sydney',
-    openHourUTC: 22, // 10 PM UTC (approx, summer)
+    openHourUTC: 22,
     closeHourUTC: 7,
     color: '#f59e0b',
     glow: 'rgba(245,158,11,0.3)',
@@ -110,7 +110,6 @@ const SESSIONS = [
   },
 ];
 
-// Overlaps (UTC hour ranges)
 const OVERLAPS = [
   {
     name: 'Tokyo–London',
@@ -134,20 +133,18 @@ const OVERLAPS = [
 
 function isSessionOpen(session) {
   const now = new Date();
-  const utcH = now.getUTCHours();
-  const utcM = now.getUTCMinutes();
-  const utcTotal = utcH * 60 + utcM;
+  const utcTotal = now.getUTCHours() * 60 + now.getUTCMinutes();
   const open = session.openHourUTC * 60;
   const close = session.closeHourUTC * 60;
   if (open < close) return utcTotal >= open && utcTotal < close;
-  // overnight session (wraps midnight)
   return utcTotal >= open || utcTotal < close;
 }
 
 function isOverlapActive(overlap) {
-  const now = new Date();
-  const utcH = now.getUTCHours();
-  return utcH >= overlap.start && utcH < overlap.end;
+  return (
+    new Date().getUTCHours() >= overlap.start &&
+    new Date().getUTCHours() < overlap.end
+  );
 }
 
 function getLocalTime(timezone) {
@@ -170,10 +167,8 @@ function getWATTime() {
   });
 }
 
-// Analog clock SVG face
 function AnalogClock({ timezone, color }) {
   const [time, setTime] = useState(new Date());
-
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(id);
@@ -190,21 +185,18 @@ function AnalogClock({ timezone, color }) {
   const h = parseInt(hStr, 10) % 12;
   const m = parseInt(mStr, 10);
   const s = parseInt(sStr, 10);
-
   const sDeg = s * 6;
   const mDeg = m * 6 + s * 0.1;
   const hDeg = h * 30 + m * 0.5;
 
   const hand = (deg, len, width, clr) => {
     const rad = ((deg - 90) * Math.PI) / 180;
-    const x2 = 40 + len * Math.cos(rad);
-    const y2 = 40 + len * Math.sin(rad);
     return (
       <line
         x1="40"
         y1="40"
-        x2={x2.toFixed(2)}
-        y2={y2.toFixed(2)}
+        x2={(40 + len * Math.cos(rad)).toFixed(2)}
+        y2={(40 + len * Math.sin(rad)).toFixed(2)}
         stroke={clr}
         strokeWidth={width}
         strokeLinecap="round"
@@ -212,20 +204,15 @@ function AnalogClock({ timezone, color }) {
     );
   };
 
-  // tick marks
   const ticks = Array.from({ length: 12 }, (_, i) => {
     const angle = ((i * 30 - 90) * Math.PI) / 180;
-    const x1 = 40 + 32 * Math.cos(angle);
-    const y1 = 40 + 32 * Math.sin(angle);
-    const x2 = 40 + 36 * Math.cos(angle);
-    const y2 = 40 + 36 * Math.sin(angle);
     return (
       <line
         key={i}
-        x1={x1.toFixed(1)}
-        y1={y1.toFixed(1)}
-        x2={x2.toFixed(1)}
-        y2={y2.toFixed(1)}
+        x1={(40 + 32 * Math.cos(angle)).toFixed(1)}
+        y1={(40 + 32 * Math.sin(angle)).toFixed(1)}
+        x2={(40 + 36 * Math.cos(angle)).toFixed(1)}
+        y2={(40 + 36 * Math.sin(angle)).toFixed(1)}
         stroke={`${color}80`}
         strokeWidth="1.5"
       />
@@ -234,7 +221,6 @@ function AnalogClock({ timezone, color }) {
 
   return (
     <svg viewBox="0 0 80 80" width="80" height="80">
-      {/* Face */}
       <circle
         cx="40"
         cy="40"
@@ -252,7 +238,6 @@ function AnalogClock({ timezone, color }) {
         strokeWidth="0.5"
         opacity="0.4"
       />
-      {/* Glow ring */}
       <circle
         cx="40"
         cy="40"
@@ -262,23 +247,18 @@ function AnalogClock({ timezone, color }) {
         strokeWidth="6"
         opacity="0.06"
       />
-      {/* Ticks */}
       {ticks}
-      {/* Hands */}
       {hand(hDeg, 20, 2.5, '#e2e8f0')}
       {hand(mDeg, 27, 1.8, color)}
       {hand(sDeg, 30, 1, '#ff6b6b')}
-      {/* Center dot */}
       <circle cx="40" cy="40" r="2.5" fill={color} />
     </svg>
   );
 }
 
-// Full session clock widget
 function SessionClocks() {
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
   const [watTime, setWatTime] = useState('');
-
   useEffect(() => {
     const id = setInterval(() => {
       setTick((t) => t + 1);
@@ -290,13 +270,10 @@ function SessionClocks() {
 
   return (
     <div className="lf-session-clocks">
-      {/* WAT header */}
       <div className="lf-session-clocks__header">
         <span className="lf-session-clocks__wat-label">🇳🇬 Your time (WAT)</span>
         <span className="lf-session-clocks__wat-time">{watTime}</span>
       </div>
-
-      {/* 4 clocks */}
       <div className="lf-clocks-grid">
         {SESSIONS.map((session) => {
           const open = isSessionOpen(session);
@@ -314,22 +291,18 @@ function SessionClocks() {
                   {open ? 'OPEN' : 'CLOSED'}
                 </span>
               </div>
-
               <div className="lf-clock-card__face">
                 <AnalogClock
                   timezone={session.timezone}
                   color={session.color}
                 />
               </div>
-
               <div className="lf-clock-card__digital">
                 {getLocalTime(session.timezone)}
               </div>
-
               <div className="lf-clock-card__name">
                 <span>{session.flag}</span> {session.name}
               </div>
-
               <div className="lf-clock-card__meta">
                 <span>
                   {session.watOpen}–{session.watClose} WAT
@@ -340,8 +313,6 @@ function SessionClocks() {
           );
         })}
       </div>
-
-      {/* Overlaps */}
       <div className="lf-overlaps">
         <h4 className="lf-overlaps__title">⚡ Session Overlaps</h4>
         <div className="lf-overlaps__grid">
@@ -364,6 +335,870 @@ function SessionClocks() {
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Order Simulator ──────────────────────────────────────────────────────────
+const OS_PAIRS = [
+  { label: 'GBP/USD', pip: 0.0001, digits: 5, base: 1.3515 },
+  { label: 'EUR/USD', pip: 0.0001, digits: 5, base: 1.085 },
+  { label: 'USD/JPY', pip: 0.01, digits: 3, base: 155.4 },
+  { label: 'AUD/USD', pip: 0.0001, digits: 5, base: 0.652 },
+  { label: 'USD/CAD', pip: 0.0001, digits: 5, base: 1.364 },
+  { label: 'EUR/GBP', pip: 0.0001, digits: 5, base: 0.852 },
+];
+
+const OS_LOTS = [
+  { label: 'Nano (0.01)', value: 0.01, pipValue: 0.1 },
+  { label: 'Micro (0.1)', value: 0.1, pipValue: 1.0 },
+  { label: 'Mini (0.5)', value: 0.5, pipValue: 5.0 },
+  { label: 'Standard (1)', value: 1, pipValue: 10.0 },
+];
+
+const SL_PIPS = 20;
+const TP_PIPS = 40;
+const CANDLE_COUNT = 40;
+const FUTURE_CANDLES = 18;
+const CANDLE_W = 10;
+const CANDLE_GAP = 4;
+const CHART_H = 220;
+const CHART_PAD_TOP = 18;
+const CHART_PAD_BOT = 18;
+const ANIM_INTERVAL = 160;
+
+function seedRng(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function generateHistoryCandles(pairBase, pip, seed = 42) {
+  const rng = seedRng(seed);
+  const candles = [];
+  let price = pairBase;
+  for (let i = 0; i < CANDLE_COUNT; i++) {
+    const body = (rng() * 12 + 3) * pip;
+    const bull = rng() > 0.48;
+    const open = price;
+    const close = bull ? open + body : open - body;
+    const high = Math.max(open, close) + rng() * 6 * pip;
+    const low = Math.min(open, close) - rng() * 6 * pip;
+    candles.push({ open, close, high, low, bull });
+    price = close + (rng() - 0.5) * 4 * pip;
+  }
+  return candles;
+}
+
+function generateFutureCandles(entryPrice, direction, pip, count, seed = 99) {
+  const rng = seedRng(seed);
+  const candles = [];
+  let price = entryPrice;
+  const bias = direction === 'long' ? 0.62 : 0.38;
+  for (let i = 0; i < count; i++) {
+    const body = (rng() * 14 + 4) * pip;
+    const bull = rng() < bias;
+    const open = price;
+    const close = bull ? open + body : open - body;
+    const high = Math.max(open, close) + rng() * 5 * pip;
+    const low = Math.min(open, close) - rng() * 5 * pip;
+    candles.push({ open, close, high, low, bull });
+    price = close;
+  }
+  return candles;
+}
+
+function makeYScale(allCandles) {
+  const prices = allCandles.flatMap((c) => [c.high, c.low]);
+  const minP = Math.min(...prices);
+  const maxP = Math.max(...prices);
+  const range = maxP - minP || 1;
+  const toY = (p) =>
+    CHART_PAD_TOP +
+    ((maxP - p) / range) * (CHART_H - CHART_PAD_TOP - CHART_PAD_BOT);
+  const toPrice = (y) =>
+    maxP -
+    ((y - CHART_PAD_TOP) / (CHART_H - CHART_PAD_TOP - CHART_PAD_BOT)) * range;
+  return { toY, toPrice };
+}
+
+function CandleChart({
+  history,
+  future,
+  visibleFuture,
+  entryPrice,
+  slPrice,
+  tpPrice,
+  orderPlaced,
+  result,
+  pair,
+  onDragEntry,
+  onDragSL,
+  onDragTP,
+}) {
+  const svgRef = useRef(null);
+  const dragging = useRef(null);
+
+  const allCandles = [...history, ...future];
+  const { toY, toPrice } = makeYScale(allCandles);
+  const total = history.length + future.length;
+  const svgW = total * (CANDLE_W + CANDLE_GAP) + 64;
+
+  const histX = (i) => 8 + i * (CANDLE_W + CANDLE_GAP);
+  const futX = (i) => 8 + (history.length + i) * (CANDLE_W + CANDLE_GAP);
+  const midX = (x) => x + CANDLE_W / 2;
+  const lineW = svgW - 8;
+  const fmt = (p) => (pair.digits === 3 ? p.toFixed(2) : p.toFixed(4));
+
+  const entryY = toY(entryPrice);
+  const slY = toY(slPrice);
+  const tpY = toY(tpPrice);
+
+  const getSVGY = (clientY) => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    return Math.max(
+      CHART_PAD_TOP,
+      Math.min(CHART_H - CHART_PAD_BOT, clientY - rect.top),
+    );
+  };
+
+  const onMouseDown = (which) => (e) => {
+    if (orderPlaced) return;
+    e.preventDefault();
+    dragging.current = which;
+  };
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragging.current) return;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const svgY = getSVGY(clientY);
+      if (svgY === null) return;
+      const newPrice = toPrice(svgY);
+      if (dragging.current === 'entry') onDragEntry?.(newPrice);
+      if (dragging.current === 'sl') onDragSL?.(newPrice);
+      if (dragging.current === 'tp') onDragTP?.(newPrice);
+    };
+    const onUp = () => {
+      dragging.current = null;
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [onDragEntry, onDragSL, onDragTP]);
+
+  const dragLine = (y, color, label, which) => (
+    <g
+      key={which}
+      style={{ cursor: orderPlaced ? 'default' : 'ns-resize' }}
+      onMouseDown={onMouseDown(which)}
+      onTouchStart={onMouseDown(which)}
+    >
+      <line
+        x1={8}
+        x2={lineW}
+        y1={y}
+        y2={y}
+        stroke="transparent"
+        strokeWidth={14}
+      />
+      <line
+        x1={8}
+        x2={lineW}
+        y1={y}
+        y2={y}
+        stroke={color}
+        strokeWidth={1.5}
+        strokeDasharray="6 3"
+        opacity={0.9}
+      />
+      {!orderPlaced && (
+        <g>
+          <rect
+            x={lineW - 42}
+            y={y - 9}
+            width={42}
+            height={18}
+            rx={4}
+            fill={color}
+            opacity={0.18}
+          />
+          <text
+            x={lineW - 21}
+            y={y + 4}
+            textAnchor="middle"
+            fill={color}
+            fontSize={8}
+            fontFamily="monospace"
+            fontWeight="bold"
+          >
+            ⠿ {label}
+          </text>
+        </g>
+      )}
+      {orderPlaced && (
+        <text
+          x={lineW + 2}
+          y={y + 4}
+          fill={color}
+          fontSize={9}
+          fontFamily="monospace"
+        >
+          {label === 'Entry'
+            ? fmt(entryPrice)
+            : label === 'TP'
+              ? `TP ${fmt(tpPrice)}`
+              : `SL ${fmt(slPrice)}`}
+        </text>
+      )}
+    </g>
+  );
+
+  return (
+    <div className="os-chart-wrap">
+      <svg
+        ref={svgRef}
+        width={svgW}
+        height={CHART_H}
+        style={{ display: 'block', minWidth: svgW }}
+      >
+        {[0.25, 0.5, 0.75].map((f, i) => (
+          <line
+            key={i}
+            x1={8}
+            x2={lineW}
+            y1={CHART_PAD_TOP + f * (CHART_H - CHART_PAD_TOP - CHART_PAD_BOT)}
+            y2={CHART_PAD_TOP + f * (CHART_H - CHART_PAD_TOP - CHART_PAD_BOT)}
+            stroke="rgba(255,255,255,0.05)"
+            strokeWidth={1}
+          />
+        ))}
+
+        {orderPlaced && (
+          <rect
+            x={histX(history.length)}
+            y={CHART_PAD_TOP}
+            width={future.length * (CANDLE_W + CANDLE_GAP)}
+            height={CHART_H - CHART_PAD_TOP - CHART_PAD_BOT}
+            fill="rgba(255,255,255,0.025)"
+          />
+        )}
+
+        {dragLine(tpY, '#22c55e', 'TP', 'tp')}
+        {dragLine(entryY, '#60a5fa', 'Entry', 'entry')}
+        {dragLine(slY, '#ef4444', 'SL', 'sl')}
+
+        {history.map((c, i) => {
+          const x = histX(i);
+          const cx = midX(x);
+          const oY = toY(c.open);
+          const clY = toY(c.close);
+          const bY = Math.min(oY, clY);
+          const bH = Math.max(Math.abs(oY - clY), 1);
+          const col = c.bull ? '#22c55e' : '#ef4444';
+          return (
+            <g key={`h${i}`}>
+              <line
+                x1={cx}
+                x2={cx}
+                y1={toY(c.high)}
+                y2={toY(c.low)}
+                stroke={col}
+                strokeWidth={1}
+                opacity={0.7}
+              />
+              <rect
+                x={x}
+                y={bY}
+                width={CANDLE_W}
+                height={bH}
+                fill={col}
+                opacity={0.85}
+                rx={1}
+              />
+            </g>
+          );
+        })}
+
+        {orderPlaced && (
+          <line
+            x1={histX(history.length)}
+            x2={histX(history.length)}
+            y1={CHART_PAD_TOP}
+            y2={CHART_H - CHART_PAD_BOT}
+            stroke="#60a5fa"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+            opacity={0.4}
+          />
+        )}
+
+        {future.slice(0, visibleFuture).map((c, i) => {
+          const x = futX(i);
+          const cx = midX(x);
+          const oY = toY(c.open);
+          const clY = toY(c.close);
+          const bY = Math.min(oY, clY);
+          const bH = Math.max(Math.abs(oY - clY), 1);
+          const col = c.bull ? '#22c55e' : '#ef4444';
+          const op = result ? 0.5 : 0.9;
+          return (
+            <g key={`f${i}`}>
+              <line
+                x1={cx}
+                x2={cx}
+                y1={toY(c.high)}
+                y2={toY(c.low)}
+                stroke={col}
+                strokeWidth={1}
+                opacity={0.6 * op}
+              />
+              <rect
+                x={x}
+                y={bY}
+                width={CANDLE_W}
+                height={bH}
+                fill={col}
+                opacity={0.85 * op}
+                rx={1}
+              />
+            </g>
+          );
+        })}
+
+        {result &&
+          (() => {
+            const lastC = future[visibleFuture - 1];
+            if (!lastC) return null;
+            const lx = futX(visibleFuture - 1) + CANDLE_W / 2;
+            const ly = toY(result === 'tp' ? tpPrice : slPrice);
+            const col = result === 'tp' ? '#22c55e' : '#ef4444';
+            return (
+              <g>
+                <circle cx={lx} cy={ly} r={7} fill={col} opacity={0.25} />
+                <circle cx={lx} cy={ly} r={4} fill={col} />
+                <rect
+                  x={lx - 24}
+                  y={ly - 22}
+                  width={48}
+                  height={16}
+                  rx={4}
+                  fill={col}
+                  opacity={0.9}
+                />
+                <text
+                  x={lx}
+                  y={ly - 10}
+                  textAnchor="middle"
+                  fill="#fff"
+                  fontSize={8}
+                  fontWeight="bold"
+                  fontFamily="monospace"
+                >
+                  {result === 'tp' ? '✓ TP HIT' : '✗ SL HIT'}
+                </text>
+              </g>
+            );
+          })()}
+      </svg>
+    </div>
+  );
+}
+
+function OrderSimulator() {
+  const [pairIdx, setPairIdx] = useState(0);
+  const [lotIdx, setLotIdx] = useState(0); // -1 = custom
+  const [customLot, setCustomLot] = useState('');
+  const [direction, setDirection] = useState('long');
+  const [marketBias, setMarketBias] = useState('up');
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [visibleFuture, setVisibleFuture] = useState(0);
+  const [result, setResult] = useState(null);
+  const [pnl, setPnl] = useState(null);
+  const [animating, setAnimating] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+  const [entrySeed, setEntrySeed] = useState(42);
+  const [speed, setSpeed] = useState(5); // 1=fast … 10=slow
+
+  // draggable line overrides (null = use auto)
+  const [manualEntry, setManualEntry] = useState(null);
+  const [manualSL, setManualSL] = useState(null);
+  const [manualTP, setManualTP] = useState(null);
+
+  const timerRef = useRef(null);
+  const scrollRef = useRef(null);
+
+  const pair = OS_PAIRS[pairIdx];
+
+  // resolved lot
+  const resolvedLot = (() => {
+    if (lotIdx >= 0) return OS_LOTS[lotIdx];
+    const v = parseFloat(customLot);
+    if (!isNaN(v) && v > 0) return { value: v, pipValue: v * 10 };
+    return OS_LOTS[0];
+  })();
+
+  useEffect(() => {
+    const h = generateHistoryCandles(pair.base, pair.pip, entrySeed);
+    setHistory(h);
+    setFuture([]);
+    setOrderPlaced(false);
+    setVisibleFuture(0);
+    setResult(null);
+    setPnl(null);
+    setAnimating(false);
+    setManualEntry(null);
+    setManualSL(null);
+    setManualTP(null);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, [pairIdx, entrySeed]);
+
+  useEffect(() => () => clearInterval(timerRef.current), []);
+
+  const baseEntry =
+    history.length > 0 ? history[history.length - 1].close : pair.base;
+  const entryPrice = manualEntry ?? baseEntry;
+  const slPrice =
+    manualSL ??
+    (direction === 'long'
+      ? entryPrice - SL_PIPS * pair.pip
+      : entryPrice + SL_PIPS * pair.pip);
+  const tpPrice =
+    manualTP ??
+    (direction === 'long'
+      ? entryPrice + TP_PIPS * pair.pip
+      : entryPrice - TP_PIPS * pair.pip);
+
+  const slPips = Math.round(Math.abs(entryPrice - slPrice) / pair.pip);
+  const tpPips = Math.round(Math.abs(entryPrice - tpPrice) / pair.pip);
+  const rrRatio = slPips > 0 ? (tpPips / slPips).toFixed(1) : '—';
+
+  const fmt = (p) => (pair.digits === 3 ? p.toFixed(2) : p.toFixed(4));
+
+  // speed: 1=50ms … 10=400ms
+  const speedToInterval = (s) => Math.round(50 + ((s - 1) * (400 - 50)) / 9);
+
+  const placeOrder = useCallback(() => {
+    if (animating) return;
+    const futureBias = marketBias === 'up' ? 'long' : 'short';
+    const f = generateFutureCandles(
+      entryPrice,
+      futureBias,
+      pair.pip,
+      FUTURE_CANDLES,
+      entrySeed + 7,
+    );
+    setFuture(f);
+    setOrderPlaced(true);
+    setVisibleFuture(0);
+    setResult(null);
+    setPnl(null);
+    setAnimating(true);
+
+    let i = 0;
+    timerRef.current = setInterval(() => {
+      i++;
+      setVisibleFuture(i);
+      const slice = f.slice(0, i);
+      let hit = null;
+      for (const c of slice) {
+        if (direction === 'long') {
+          if (c.high >= tpPrice) {
+            hit = 'tp';
+            break;
+          }
+          if (c.low <= slPrice) {
+            hit = 'sl';
+            break;
+          }
+        } else {
+          if (c.low <= tpPrice) {
+            hit = 'tp';
+            break;
+          }
+          if (c.high >= slPrice) {
+            hit = 'sl';
+            break;
+          }
+        }
+      }
+      if (hit || i >= FUTURE_CANDLES) {
+        clearInterval(timerRef.current);
+        setAnimating(false);
+        const finalHit =
+          hit ||
+          (direction === 'long'
+            ? f[i - 1]?.close >= entryPrice
+              ? 'tp'
+              : 'sl'
+            : f[i - 1]?.close <= entryPrice
+              ? 'tp'
+              : 'sl');
+        setResult(finalHit);
+        setPnl((finalHit === 'tp' ? tpPips : -slPips) * resolvedLot.pipValue);
+      }
+    }, speedToInterval(speed));
+  }, [
+    animating,
+    marketBias,
+    entryPrice,
+    pair,
+    resolvedLot,
+    direction,
+    tpPrice,
+    slPrice,
+    entrySeed,
+    speed,
+    tpPips,
+    slPips,
+  ]);
+
+  const resetSim = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setEntrySeed((s) => s + 13);
+  };
+
+  useEffect(() => {
+    if (scrollRef.current && orderPlaced)
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+  }, [visibleFuture, orderPlaced]);
+
+  const pnlPositive = pnl !== null && pnl >= 0;
+
+  // placeholder future candles for scale before order placed
+  const chartFuture = orderPlaced
+    ? future
+    : Array.from({ length: FUTURE_CANDLES }, () => ({
+        open: entryPrice,
+        close: entryPrice,
+        high: Math.max(tpPrice, entryPrice) + pair.pip,
+        low: Math.min(slPrice, entryPrice) - pair.pip,
+        bull: true,
+      }));
+
+  return (
+    <div className="os-wrap">
+      <div className="os-header">
+        <span className="os-header__icon">⚙️</span>
+        <div>
+          <p className="os-header__title">Order Simulator</p>
+          <p className="os-header__sub">
+            Place a simulated trade and watch it play out in real time
+          </p>
+        </div>
+      </div>
+
+      <div className="os-controls">
+        <div className="os-control-group">
+          <label className="os-label">Pair</label>
+          <div className="os-select-row">
+            {OS_PAIRS.map((p, i) => (
+              <button
+                key={p.label}
+                className={`os-chip ${pairIdx === i ? 'os-chip--active' : ''}`}
+                onClick={() => {
+                  if (!animating) setPairIdx(i);
+                }}
+                disabled={animating}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="os-control-group">
+          <label className="os-label">Lot Size</label>
+          <div className="os-select-row os-select-row--lot">
+            {OS_LOTS.map((l, i) => (
+              <button
+                key={l.label}
+                className={`os-chip ${lotIdx === i ? 'os-chip--active' : ''}`}
+                onClick={() => {
+                  if (!animating) {
+                    setLotIdx(i);
+                    setCustomLot('');
+                  }
+                }}
+                disabled={animating}
+              >
+                {l.label}
+              </button>
+            ))}
+            <input
+              type="number"
+              min="0.001"
+              max="100"
+              step="0.01"
+              placeholder="Custom lot…"
+              className={`os-lot-input ${lotIdx === -1 ? 'os-lot-input--active' : ''}`}
+              value={customLot}
+              disabled={animating}
+              onChange={(e) => {
+                setCustomLot(e.target.value);
+                setLotIdx(-1);
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="os-controls-bottom">
+          <div className="os-control-group">
+            <label className="os-label">Your Direction</label>
+            <div className="os-direction-row">
+              <button
+                className={`os-dir-btn ${direction === 'long' ? 'os-dir-btn--active-long' : ''}`}
+                onClick={() => {
+                  if (!animating) setDirection('long');
+                }}
+                disabled={animating}
+              >
+                ▲ Long (Buy)
+              </button>
+              <button
+                className={`os-dir-btn ${direction === 'short' ? 'os-dir-btn--active-short' : ''}`}
+                onClick={() => {
+                  if (!animating) setDirection('short');
+                }}
+                disabled={animating}
+              >
+                ▼ Short (Sell)
+              </button>
+            </div>
+          </div>
+
+          <div className="os-control-group">
+            <label className="os-label">Market Will Move</label>
+            <div className="os-direction-row">
+              <button
+                className={`os-dir-btn ${marketBias === 'up' ? 'os-dir-btn--active-up' : ''}`}
+                onClick={() => {
+                  if (!animating) setMarketBias('up');
+                }}
+                disabled={animating}
+              >
+                📈 Upward
+              </button>
+              <button
+                className={`os-dir-btn ${marketBias === 'down' ? 'os-dir-btn--active-down' : ''}`}
+                onClick={() => {
+                  if (!animating) setMarketBias('down');
+                }}
+                disabled={animating}
+              >
+                📉 Downward
+              </button>
+            </div>
+          </div>
+
+          <div className="os-summary">
+            <div className="os-summary-row">
+              <span className="os-summary__label">Entry</span>
+              <span className="os-summary__value">{fmt(entryPrice)}</span>
+            </div>
+            <div className="os-summary-row">
+              <span className="os-summary__label" style={{ color: '#22c55e' }}>
+                TP (+{tpPips} pips)
+              </span>
+              <span className="os-summary__value" style={{ color: '#22c55e' }}>
+                {fmt(tpPrice)}
+              </span>
+            </div>
+            <div className="os-summary-row">
+              <span className="os-summary__label" style={{ color: '#ef4444' }}>
+                SL (-{slPips} pips)
+              </span>
+              <span className="os-summary__value" style={{ color: '#ef4444' }}>
+                {fmt(slPrice)}
+              </span>
+            </div>
+            <div className="os-summary-row">
+              <span className="os-summary__label">Risk / Reward</span>
+              <span className="os-summary__value">1 : {rrRatio}</span>
+            </div>
+            <div className="os-summary-row">
+              <span className="os-summary__label">Pip Value</span>
+              <span className="os-summary__value">
+                ${resolvedLot.pipValue.toFixed(2)}/pip
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {!orderPlaced && (
+        <p className="os-drag-hint">
+          ⠿ Drag the blue, green, and red lines to set Entry / TP / SL
+        </p>
+      )}
+
+      <div className="os-chart-scroll" ref={scrollRef}>
+        <CandleChart
+          history={history}
+          future={chartFuture}
+          visibleFuture={orderPlaced ? visibleFuture : 0}
+          entryPrice={entryPrice}
+          slPrice={slPrice}
+          tpPrice={tpPrice}
+          direction={direction}
+          orderPlaced={orderPlaced}
+          result={result}
+          pair={pair}
+          onDragEntry={(p) => {
+            if (!orderPlaced) setManualEntry(p);
+          }}
+          onDragSL={(p) => {
+            if (!orderPlaced) setManualSL(p);
+          }}
+          onDragTP={(p) => {
+            if (!orderPlaced) setManualTP(p);
+          }}
+        />
+      </div>
+
+      <div className="os-chart-legend">
+        <span>
+          <span style={{ color: '#60a5fa' }}>— —</span> Entry
+        </span>
+        <span>
+          <span style={{ color: '#22c55e' }}>— —</span> Take Profit
+        </span>
+        <span>
+          <span style={{ color: '#ef4444' }}>— —</span> Stop Loss
+        </span>
+        <span style={{ color: 'rgba(255,255,255,0.3)' }}>| Future zone</span>
+      </div>
+
+      <div className="os-speed-row">
+        <label className="os-label">Animation Speed</label>
+        <div className="os-speed-inner">
+          <span className="os-speed-label">Fast</span>
+          <input
+            type="range"
+            min={1}
+            max={10}
+            step={1}
+            value={speed}
+            className="os-speed-slider"
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            disabled={animating}
+          />
+          <span className="os-speed-label">Slow</span>
+          <span className="os-speed-val">
+            {speedToInterval(speed)}ms/candle
+          </span>
+        </div>
+      </div>
+
+      <div className="os-actions">
+        {!orderPlaced || result ? (
+          <button
+            className="os-btn os-btn--place"
+            onClick={result ? resetSim : placeOrder}
+            disabled={animating || history.length === 0}
+          >
+            {result
+              ? '↺ Try Another Trade'
+              : `Place ${direction === 'long' ? 'Buy' : 'Sell'} Order →`}
+          </button>
+        ) : (
+          <button className="os-btn os-btn--place" disabled>
+            <span className="os-btn__spinner" /> Animating…
+          </button>
+        )}
+        {!animating && orderPlaced && !result && (
+          <button className="os-btn os-btn--reset" onClick={resetSim}>
+            Reset
+          </button>
+        )}
+      </div>
+
+      {result && pnl !== null && (
+        <div
+          className={`os-result ${pnlPositive ? 'os-result--win' : 'os-result--loss'}`}
+        >
+          <div className="os-result__badge">
+            {pnlPositive ? '🏆 TAKE PROFIT HIT' : '🛑 STOP LOSS HIT'}
+          </div>
+          <div className="os-result__pnl">
+            <span className="os-result__pnl-label">P&amp;L</span>
+            <span
+              className={`os-result__pnl-value ${pnlPositive ? 'os-result__pnl-value--pos' : 'os-result__pnl-value--neg'}`}
+            >
+              {pnlPositive ? '+' : ''}
+              {pnl.toFixed(2)} USD
+            </span>
+          </div>
+          <div className="os-result__details">
+            <span>
+              {pnlPositive ? tpPips : slPips} pips × $
+              {resolvedLot.pipValue.toFixed(2)}/pip × {resolvedLot.value} lot
+            </span>
+          </div>
+          <p className="os-result__lesson">
+            {pnlPositive
+              ? `Good read! Your ${direction} trade caught the ${marketBias}ward move. With 1:${rrRatio} RR, disciplined sizing keeps you profitable long-term.`
+              : `The market moved against your ${direction}. Your stop loss capped the damage at $${Math.abs(pnl).toFixed(2)}. That's risk management working correctly.`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Practice Modal ───────────────────────────────────────────────────────────
+function PracticeModal({ onClose }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div className="pm-fullpage">
+      <div className="pm-fullpage__inner">
+        <div className="pm-sheet__header">
+          <div className="pm-sheet__header-left">
+            <span className="pm-sheet__icon">⚙️</span>
+            <div>
+              <p className="pm-sheet__title">Practice Order Execution</p>
+              <p className="pm-sheet__sub">
+                Simulated — no real money involved
+              </p>
+            </div>
+          </div>
+          <button
+            className="pm-sheet__close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="pm-sheet__body">
+          <OrderSimulator />
         </div>
       </div>
     </div>
@@ -537,7 +1372,6 @@ const TOPICS = [
     },
   },
   {
-    // ── TRADING SESSIONS — extra content injected below via extraContent ──
     id: 'trading-sessions',
     title: 'Trading Sessions',
     icon: '🕐',
@@ -545,7 +1379,7 @@ const TOPICS = [
     accent: '#22c55e',
     tag: 'Timing',
     duration: '8 min read',
-    hasSessionClocks: true, // ← flag consumed in render
+    hasSessionClocks: true,
     content: {
       intro:
         'Forex operates 24 hours, 5 days a week across four major sessions. Knowing when to trade is as important as knowing how to trade.',
@@ -767,6 +1601,60 @@ const TOPICS = [
     },
   },
   {
+    id: 'order-execution',
+    title: 'Order Execution',
+    icon: '⚙️',
+    gradient: 'linear-gradient(135deg, #0d1a2e 0%, #122040 50%, #1a305a 100%)',
+    accent: '#60a5fa',
+    tag: 'Execution',
+    duration: '8 min read',
+    hasPractice: true, // ← flag consumed in render to show Practice Now button
+    content: {
+      intro:
+        'Every trade you place is an order sent to the market. The type of order you use controls exactly how and when your position is opened or closed — and can be the difference between a great entry and a costly mistake.',
+      sections: [
+        {
+          heading: 'Market Order',
+          icon: '⚡',
+          body: 'Executes immediately at the best available price. You get filled instantly but have no control over the exact price. Best used during high-liquidity sessions when spreads are tight. Avoid during news releases — slippage can eat into your trade.',
+        },
+        {
+          heading: 'Limit Order',
+          icon: '🎯',
+          body: 'Sets a specific price at which you are willing to enter or exit. A Buy Limit is placed below the current price (you expect price to dip then rise). A Sell Limit is placed above the current price. You get the price you want — or the trade does not execute.',
+        },
+        {
+          heading: 'Stop Order (Buy Stop / Sell Stop)',
+          icon: '🔔',
+          body: 'Triggers when price reaches a level beyond the current market. A Buy Stop is set above price (betting on a breakout higher). A Sell Stop is set below price (betting on a breakdown lower). Used to enter in the direction of momentum once a key level is broken.',
+        },
+        {
+          heading: 'Stop Loss Order',
+          icon: '🛑',
+          body: 'A protective order that automatically closes your trade if price moves against you by a set amount. Non-negotiable for every trade. Place it at a logical level — behind a swing high or low — not at a round number you picked emotionally.',
+        },
+        {
+          heading: 'Take Profit Order',
+          icon: '✅',
+          body: 'Automatically closes your trade when price reaches your target. Locks in gains without requiring you to watch the screen. Set it at a realistic level — a nearby support/resistance zone — not a fantasy number.',
+        },
+        {
+          heading: 'Trailing Stop',
+          icon: '🔄',
+          body: 'A dynamic stop loss that moves with price as it goes in your favour, but freezes if price reverses. Allows you to ride a strong trend while protecting accumulated profit. Typically set a fixed number of pips behind the current price.',
+        },
+      ],
+      keyPoints: [
+        'Market orders fill immediately — limit orders fill at your price or not at all',
+        'Always attach a stop loss the moment you enter a trade',
+        'Use limit orders during ranging markets; stop orders for breakouts',
+        'Take profit + stop loss together define your risk-to-reward ratio',
+        'Trailing stops are ideal for strong trending moves',
+        'Pending orders (limit/stop) are set in advance — no need to watch the screen',
+      ],
+    },
+  },
+  {
     id: 'forex-glossary',
     title: 'Forex Glossary',
     icon: '📖',
@@ -860,6 +1748,7 @@ const CARD_COLORS = [
   { border: '#818cf8', glow: 'rgba(129,140,248,0.25)' },
   { border: '#10b981', glow: 'rgba(16,185,129,0.25)' },
   { border: '#c084fc', glow: 'rgba(192,132,252,0.25)' },
+  { border: '#60a5fa', glow: 'rgba(96,165,250,0.25)' },
   { border: '#94a3b8', glow: 'rgba(148,163,184,0.2)' },
   { border: '#38bdf8', glow: 'rgba(56,189,248,0.25)' },
 ];
@@ -868,6 +1757,7 @@ const CARD_COLORS = [
 export default function LearnForex() {
   const [activeTopic, setActiveTopic] = useState(null);
   const [animating, setAnimating] = useState(false);
+  const [practiceOpen, setPracticeOpen] = useState(false);
   const contentRef = useRef(null);
 
   const activeIndex = activeTopic
@@ -904,172 +1794,204 @@ export default function LearnForex() {
   // ── TOPIC CONTENT PAGE ────────────────────────────────────────────────────
   if (activeTopic) {
     const isSessions = activeTopic.id === 'trading-sessions';
+    const hasPractice = activeTopic.hasPractice;
 
     return (
-      <div
-        className={`lf-page ${animating ? 'lf-page-exit' : 'lf-page-enter'}`}
-        ref={contentRef}
-      >
-        {/* Top bar */}
-        <div className="lf-topbar">
-          <button className="lf-topbar__back" onClick={closeTopic}>
-            ← All Topics
-          </button>
-          <div className="lf-topbar__spacer" />
-          <span className="lf-topbar__counter">
-            {activeIndex + 1} / {TOPICS.length}
-          </span>
-        </div>
-
-        {/* Hero — card gradient retained */}
+      <>
         <div
-          className="lf-topic-hero"
-          style={{ background: activeTopic.gradient }}
+          className={`lf-page ${animating ? 'lf-page-exit' : 'lf-page-enter'}`}
+          ref={contentRef}
         >
-          <div className="lf-topic-hero__inner">
-            <div
-              className="lf-topic-hero__badge"
-              style={{
-                background: `${activeTopic.accent}20`,
-                border: `1px solid ${activeTopic.accent}55`,
-                color: activeTopic.accent,
-              }}
-            >
-              ● {activeTopic.tag} · {activeTopic.duration}
-            </div>
-            <div className="lf-topic-hero__heading">
-              <span className="lf-topic-hero__emoji">{activeTopic.icon}</span>
-              <h1 className="lf-topic-hero__title">{activeTopic.title}</h1>
-            </div>
-            <p className="lf-topic-hero__intro">{activeTopic.content.intro}</p>
-          </div>
-        </div>
-
-        {/* Body — CorePips theme */}
-        <div className="lf-topic-body">
-          {/* ── Session Clocks (trading-sessions only) ── */}
-          {isSessions && (
-            <div className="lf-section-divider">
-              <span>🕐 Live Session Clocks</span>
-            </div>
-          )}
-          {isSessions && <SessionClocks />}
-
-          {/* Main sections */}
-          {isSessions && (
-            <div className="lf-section-divider">
-              <span>📚 The Four Sessions</span>
-            </div>
-          )}
-
-          <div className="lf-sections-list">
-            {activeTopic.content.sections.map((section, i) => (
-              <div key={i} className="lf-section-block" style={{ '--si': i }}>
-                <span className="lf-section-block__icon">{section.icon}</span>
-                <div>
-                  <h3 className="lf-section-block__heading">
-                    {section.heading}
-                  </h3>
-                  <p className="lf-section-block__body">{section.body}</p>
-                </div>
-              </div>
-            ))}
+          {/* Top bar */}
+          <div className="lf-topbar">
+            <button className="lf-topbar__back" onClick={closeTopic}>
+              ← All Topics
+            </button>
+            <div className="lf-topbar__spacer" />
+            <span className="lf-topbar__counter">
+              {activeIndex + 1} / {TOPICS.length}
+            </span>
           </div>
 
-          {/* ── Overlap sections (trading-sessions only) ── */}
-          {isSessions && activeTopic.content.overlapSections && (
-            <>
-              <div className="lf-section-divider lf-section-divider--overlap">
-                <span>⚡ Session Overlaps Explained</span>
+          {/* Hero */}
+          <div
+            className="lf-topic-hero"
+            style={{ background: activeTopic.gradient }}
+          >
+            <div className="lf-topic-hero__inner">
+              <div
+                className="lf-topic-hero__badge"
+                style={{
+                  background: `${activeTopic.accent}20`,
+                  border: `1px solid ${activeTopic.accent}55`,
+                  color: activeTopic.accent,
+                }}
+              >
+                ● {activeTopic.tag} · {activeTopic.duration}
               </div>
-              <div className="lf-sections-list">
-                {activeTopic.content.overlapSections.map((section, i) => (
-                  <div
-                    key={i}
-                    className="lf-section-block lf-section-block--overlap"
-                    style={{ '--si': i }}
-                  >
-                    <span className="lf-section-block__icon">
-                      {section.icon}
-                    </span>
-                    <div>
-                      <h3 className="lf-section-block__heading">
-                        {section.heading}
-                      </h3>
-                      <p className="lf-section-block__body">{section.body}</p>
-                    </div>
+              <div className="lf-topic-hero__heading">
+                <span className="lf-topic-hero__emoji">{activeTopic.icon}</span>
+                <h1 className="lf-topic-hero__title">{activeTopic.title}</h1>
+              </div>
+              <p className="lf-topic-hero__intro">
+                {activeTopic.content.intro}
+              </p>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="lf-topic-body">
+            {/* Session clocks */}
+            {isSessions && (
+              <div className="lf-section-divider">
+                <span>🕐 Live Session Clocks</span>
+              </div>
+            )}
+            {isSessions && <SessionClocks />}
+            {isSessions && (
+              <div className="lf-section-divider">
+                <span>📚 The Four Sessions</span>
+              </div>
+            )}
+
+            {/* Main sections */}
+            <div className="lf-sections-list">
+              {activeTopic.content.sections.map((section, i) => (
+                <div key={i} className="lf-section-block" style={{ '--si': i }}>
+                  <span className="lf-section-block__icon">{section.icon}</span>
+                  <div>
+                    <h3 className="lf-section-block__heading">
+                      {section.heading}
+                    </h3>
+                    <p className="lf-section-block__body">{section.body}</p>
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Key Takeaways */}
-          <div className="lf-takeaways">
-            <p className="lf-takeaways__label">Key Takeaways</p>
-            <div className="lf-takeaways__list">
-              {activeTopic.content.keyPoints.map((point, i) => (
-                <div key={i} className="lf-takeaway-item" style={{ '--ki': i }}>
-                  <span className="lf-takeaway-item__num">{i + 1}</span>
-                  <span className="lf-takeaway-item__text">{point}</span>
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Footer nav */}
-          <div className="lf-topic-footer">
-            <div className="lf-progress">
-              <div className="lf-progress__labels">
-                <span>Progress</span>
-                <span>
-                  {activeIndex + 1}/{TOPICS.length} topics
-                </span>
-              </div>
-              <div className="lf-progress__track">
-                <div
-                  className="lf-progress__fill"
-                  style={{ width: `${progress}%` }}
-                />
+            {/* Overlap sections */}
+            {isSessions && activeTopic.content.overlapSections && (
+              <>
+                <div className="lf-section-divider lf-section-divider--overlap">
+                  <span>⚡ Session Overlaps Explained</span>
+                </div>
+                <div className="lf-sections-list">
+                  {activeTopic.content.overlapSections.map((section, i) => (
+                    <div
+                      key={i}
+                      className="lf-section-block lf-section-block--overlap"
+                      style={{ '--si': i }}
+                    >
+                      <span className="lf-section-block__icon">
+                        {section.icon}
+                      </span>
+                      <div>
+                        <h3 className="lf-section-block__heading">
+                          {section.heading}
+                        </h3>
+                        <p className="lf-section-block__body">{section.body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Key Takeaways */}
+            <div className="lf-takeaways">
+              <p className="lf-takeaways__label">Key Takeaways</p>
+              <div className="lf-takeaways__list">
+                {activeTopic.content.keyPoints.map((point, i) => (
+                  <div
+                    key={i}
+                    className="lf-takeaway-item"
+                    style={{ '--ki': i }}
+                  >
+                    <span className="lf-takeaway-item__num">{i + 1}</span>
+                    <span className="lf-takeaway-item__text">{point}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="lf-topic-nav">
-              <button
-                className="lf-nav-btn lf-nav-btn--prev"
-                onClick={goPrev}
-                disabled={activeIndex === 0}
-              >
-                <p className="lf-nav-btn__label">← PREVIOUS</p>
-                <p className="lf-nav-btn__name">
-                  {activeIndex > 0 ? TOPICS[activeIndex - 1].title : '—'}
-                </p>
-              </button>
+            {/* ── Practice Now button (order-execution only) ── */}
+            {hasPractice && (
+              <div className="lf-practice-cta">
+                <div className="lf-practice-cta__left">
+                  <span className="lf-practice-cta__icon">🎮</span>
+                  <div>
+                    <p className="lf-practice-cta__title">Ready to practice?</p>
+                    <p className="lf-practice-cta__sub">
+                      Place a simulated trade on a live chart — no money at risk
+                    </p>
+                  </div>
+                </div>
+                <button
+                  className="lf-practice-cta__btn"
+                  onClick={() => setPracticeOpen(true)}
+                >
+                  Practice Now →
+                </button>
+              </div>
+            )}
 
-              <button
-                className="lf-nav-btn lf-nav-btn--grid"
-                onClick={closeTopic}
-                title="All Topics"
-              >
-                ⊞
-              </button>
+            {/* Footer nav */}
+            <div className="lf-topic-footer">
+              <div className="lf-progress">
+                <div className="lf-progress__labels">
+                  <span>Progress</span>
+                  <span>
+                    {activeIndex + 1}/{TOPICS.length} topics
+                  </span>
+                </div>
+                <div className="lf-progress__track">
+                  <div
+                    className="lf-progress__fill"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
 
-              <button
-                className="lf-nav-btn lf-nav-btn--next"
-                onClick={goNext}
-                disabled={activeIndex === TOPICS.length - 1}
-              >
-                <p className="lf-nav-btn__label">NEXT →</p>
-                <p className="lf-nav-btn__name">
-                  {activeIndex < TOPICS.length - 1
-                    ? TOPICS[activeIndex + 1].title
-                    : '—'}
-                </p>
-              </button>
+              <div className="lf-topic-nav">
+                <button
+                  className="lf-nav-btn lf-nav-btn--prev"
+                  onClick={goPrev}
+                  disabled={activeIndex === 0}
+                >
+                  <p className="lf-nav-btn__label">← PREVIOUS</p>
+                  <p className="lf-nav-btn__name">
+                    {activeIndex > 0 ? TOPICS[activeIndex - 1].title : '—'}
+                  </p>
+                </button>
+                <button
+                  className="lf-nav-btn lf-nav-btn--grid"
+                  onClick={closeTopic}
+                  title="All Topics"
+                >
+                  ⊞
+                </button>
+                <button
+                  className="lf-nav-btn lf-nav-btn--next"
+                  onClick={goNext}
+                  disabled={activeIndex === TOPICS.length - 1}
+                >
+                  <p className="lf-nav-btn__label">NEXT →</p>
+                  <p className="lf-nav-btn__name">
+                    {activeIndex < TOPICS.length - 1
+                      ? TOPICS[activeIndex + 1].title
+                      : '—'}
+                  </p>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Practice Modal — rendered outside the scrollable page */}
+        {practiceOpen && (
+          <PracticeModal onClose={() => setPracticeOpen(false)} />
+        )}
+      </>
     );
   }
 
@@ -1083,21 +2005,17 @@ export default function LearnForex() {
             <ChartAnimation />
             <CandleAnimation />
           </div>
-
           <div className="lf-hero__badge">
             Free Education · {TOPICS.length} Topics
           </div>
-
           <h1 className="lf-hero__title">
             Learn Forex For Free With
             <span className="lf-hero__title-gradient">Corepips Academy</span>
           </h1>
-
           <p className="lf-hero__sub">
             No fluff. No hype. Clear, beginner-friendly lessons built for
             traders who are serious about learning the right way.
           </p>
-
           <div className="lf-hero__stats">
             {[
               { val: TOPICS.length, label: 'Topics' },
@@ -1113,7 +2031,6 @@ export default function LearnForex() {
         </div>
       </section>
 
-      {/* Roadmap strip */}
       <div className="lf-roadmap">
         <div className="lf-roadmap__inner">
           {TOPICS.map((t, i) => (
@@ -1138,7 +2055,6 @@ export default function LearnForex() {
         </div>
       </div>
 
-      {/* Cards grid */}
       <div className="lf-grid-wrap">
         <div className="lf-grid">
           {TOPICS.map((topic, i) => {
