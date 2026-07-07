@@ -267,6 +267,8 @@ const TradeModal = ({
     session: '',
     strategy: '',
     entryReason: '',
+    commission: '',
+    swap: '',
     // screenshot      → legacy base64 field (kept for backward compat, read-only after migration)
     // screenshotId    → new Appwrite Storage file ID
     screenshot: null,
@@ -534,6 +536,28 @@ const TradeModal = ({
                 onChange={handleChange}
                 placeholder="Lot Size *"
                 className={form.errors?.lotSize ? 'error-field' : ''}
+              />
+            </div>
+
+            <div>
+              <input
+                type="number"
+                name="commission"
+                step="0.01"
+                value={form.commission}
+                onChange={handleChange}
+                placeholder="Commission ($) - optional"
+              />
+            </div>
+
+            <div>
+              <input
+                type="number"
+                name="swap"
+                step="0.01"
+                value={form.swap}
+                onChange={handleChange}
+                placeholder="Swap ($) - optional"
               />
             </div>
 
@@ -916,13 +940,17 @@ const JournalDetails = ({
     return risk === 0 ? 0 : reward / risk;
   };
 
-  const calculatePnL = (trade) => {
-    const pnlDollars = getRiskDollars(trade) * calculateRR(trade);
-    return (pnlDollars / initialBalance) * 100;
+  const calculatePnLDollars = (trade) => {
+    const grossPnL = getRiskDollars(trade) * calculateRR(trade);
+    const commission = parseFloat(trade.commission) || 0;
+    const swap = parseFloat(trade.swap) || 0;
+    return grossPnL - commission - swap;
   };
 
-  const calculatePnLDollars = (trade) =>
-    getRiskDollars(trade) * calculateRR(trade);
+  const calculatePnL = (trade) => {
+    const pnlDollars = calculatePnLDollars(trade);
+    return (pnlDollars / initialBalance) * 100;
+  };
 
   const filteredTrades = trades.filter((trade) => {
     if (
@@ -966,7 +994,7 @@ const JournalDetails = ({
         : a.date.localeCompare(b.date),
     );
     sorted.forEach((trade) => {
-      const pnlDollars = getRiskDollars(trade) * calculateRR(trade);
+      const pnlDollars = calculatePnLDollars(trade);
       map[trade.id] = { balanceAtEntry: runningBalance, pnlDollars };
       runningBalance += pnlDollars;
     });
@@ -974,7 +1002,7 @@ const JournalDetails = ({
   }, [trades, initialBalance]);
 
   const totalPnLDollars = trades.reduce(
-    (sum, trade) => sum + getRiskDollars(trade) * calculateRR(trade),
+    (sum, trade) => sum + calculatePnLDollars(trade),
     0,
   );
   const currentBalance = initialBalance + totalPnLDollars;
@@ -996,6 +1024,7 @@ const JournalDetails = ({
               <th>R:R</th>
               <th>PnL %</th>
               <th>PnL $</th>
+              <th>Fees</th>
               <th>Strategy</th>
               <th>Reflection</th>
               <th>Actions</th>
@@ -1004,7 +1033,7 @@ const JournalDetails = ({
           <tbody>
             {filteredTrades.length === 0 ? (
               <tr>
-                <td colSpan="13" className="empty-table">
+                <td colSpan="14" className="empty-table">
                   No trades found
                 </td>
               </tr>
@@ -1038,6 +1067,13 @@ const JournalDetails = ({
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
+                    </td>
+                    <td>
+                      {(parseFloat(trade.commission) || 0) +
+                        (parseFloat(trade.swap) || 0) >
+                      0
+                        ? `-$${((parseFloat(trade.commission) || 0) + (parseFloat(trade.swap) || 0)).toFixed(2)}`
+                        : '-'}
                     </td>
                     <td>{trade.strategy || '-'}</td>
                     <td

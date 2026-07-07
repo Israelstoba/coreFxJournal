@@ -132,7 +132,12 @@ const Journal = () => {
         const slPips = Math.abs(entry - sl) / pipSize;
         const riskDollars = slPips * pipValue * parseFloat(trade.lotSize);
 
-        return sum + riskDollars * rr;
+        const grossPnL = riskDollars * rr;
+        const commission = parseFloat(trade.commission) || 0;
+        const swap = parseFloat(trade.swap) || 0;
+        const netPnL = grossPnL - commission - swap;
+
+        return sum + netPnL;
       }, 0);
 
       return initialBalance + totalPnLDollars;
@@ -162,7 +167,7 @@ const Journal = () => {
         DATABASE_ID,
         TABLE_ID,
         ID.unique(),
-        journalData
+        journalData,
       );
 
       const newJournalWithMeta = {
@@ -198,7 +203,7 @@ const Journal = () => {
       await databases.updateDocument(DATABASE_ID, TABLE_ID, id, updateData);
 
       setJournals((prev) =>
-        prev.map((j) => (j.id === id ? { ...j, ...updates } : j))
+        prev.map((j) => (j.id === id ? { ...j, ...updates } : j)),
       );
     } catch (error) {
       console.error('Error updating journal:', error);
@@ -212,7 +217,7 @@ const Journal = () => {
   const handleDeleteJournal = async (id) => {
     if (
       !window.confirm(
-        'Are you sure you want to delete this journal? All trades will be lost.'
+        'Are you sure you want to delete this journal? All trades will be lost.',
       )
     ) {
       return;
