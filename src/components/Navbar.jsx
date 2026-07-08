@@ -131,7 +131,7 @@ export default function Navbar() {
               role="menu"
             >
               {[
-                { to: '/dashboard', label: 'Dashboard' },
+                { to: '/checklist', label: 'Checklist' },
                 { to: '/calculator', label: 'Position Calculator' },
                 { to: '/cfx-flip', label: 'Risk Simulator' },
               ].map((item) => (

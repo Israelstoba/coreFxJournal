@@ -19,6 +19,7 @@ import ResetPassword from './pages/ResetPassword';
 import AdminLogin from './components/admin/AdminLogin';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import EntryChecklist from './components/EntryChecklist';
 
 // Account creation and email verification imports
 import VerifyEmail from './pages/VerifyEmail';
@@ -86,6 +87,15 @@ function App() {
               <Navbar />
               <CfxFlip />
               <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/checklist"
+          element={
+            <>
+              <Navbar />
+              <EntryChecklist />
             </>
           }
         />
